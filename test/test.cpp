@@ -36,6 +36,20 @@ int main(int argc, char* argv[])
 {
     Arguments args;
 
+    bool all = false;
+    args.AddOption('a', "all", "description for all", all);
+
+    int jobs = 1;
+    args.AddOption('j', "jobs", "description for jobs", jobs);
+
+    std::string prefix;
+    args.AddOption('P', "prefix", "description for prefix", prefix);
+
+    std::string filename;
+    args.AddFixed("filename", "description for filename", filename);
+
+    args.Help();
+
     args.Process(argc, argv);
 
     return 0;
