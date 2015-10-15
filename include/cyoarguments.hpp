@@ -27,9 +27,28 @@ SOFTWARE.
 #ifndef __CYOARGUMENTS_HPP
 #define __CYOARGUMENTS_HPP
 
+#include <iostream>
+
+///////////////////////////////////////////////////////////////////////////////
+
 namespace cyoarguments
 {
-  //TODO
+    class Arguments final
+    {
+    public:
+        Arguments(const Arguments&) = delete;
+        Arguments& operator =(const Arguments&) = delete;
+
+        Arguments() { }
+
+        void Process(int argc, char* argv[])
+        {
+            for (int i = 1; i < argc; ++i)
+                std::cout << argv[i] << std::endl;
+        }
+    };
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #endif //__CYOARGUMENTS_HPP

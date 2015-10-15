@@ -28,8 +28,15 @@ SOFTWARE.
 
 #include <iostream>
 
+using namespace cyoarguments;
+
+///////////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char* argv[])
 {
-  std::cout << "TODO" << std::endl;
-  return 0;
+    Arguments args;
+
+    args.Process(argc, argv);
+
+    return 0;
 }
