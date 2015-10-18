@@ -1,6 +1,7 @@
 *.opensdf
 *.sdf
 *.suo
+*.user
 runtest
 Win32
 x64

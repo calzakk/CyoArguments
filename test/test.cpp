@@ -34,23 +34,48 @@ using namespace cyoarguments;
 
 int main(int argc, char* argv[])
 {
-    Arguments args;
+    try
+    {
+        Arguments args;
 
-    bool all = false;
-    args.AddOption('a', "all", "description for all", all);
+        bool all = false;
+        args.AddOption('a', "all", "description for all", all);
 
-    int jobs = 1;
-    args.AddOption('j', "jobs", "description for jobs", jobs);
+        bool ignoreErrors = false;
+        args.AddOption('i', nullptr, "description for ignoreErrors", ignoreErrors);
 
-    std::string prefix;
-    args.AddOption('P', "prefix", "description for prefix", prefix);
+        int jobs = 1;
+        args.AddOption('j', "jobs", "description for jobs", jobs);
 
-    std::string filename;
-    args.AddFixed("filename", "description for filename", filename);
+        std::string prefix;
+        args.AddOption('P', "prefix", "description for prefix", prefix);
 
-    args.Help();
+        bool verbose = false;
+        args.AddOption('\x0', "verbose", "description for verbose", verbose);
 
-    args.Process(argc, argv);
+        std::string filename;
+        args.AddRequired("filename", "description for filename", filename);
 
-    return 0;
+        int number = 0;
+        args.AddRequired("number", "description for number", number);
+
+        args.Help();
+
+#if 0
+        args.Process(argc, argv);
+#else
+        argc, argv; //TEMP
+        int fakeargc = 7;
+        char* fakeargv[] = { "exe_pathname", "-a", "--verbose", "-ij2", "-P=cyo", "results.txt", "9" };
+        if (!args.Process(fakeargc, fakeargv))
+            return 1;
+#endif
+
+        return 0;
+    }
+    catch (const std::exception& ex)
+    {
+        std::cerr << "EXCEPTION: " << ex.what() << std::endl;
+        return 1;
+    }
 }
