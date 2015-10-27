@@ -27,50 +27,86 @@ SOFTWARE.
 #ifndef __CYOARGUMENTS_HPP
 #define __CYOARGUMENTS_HPP
 
+#include <cassert>
 #include <iostream>
 #include <list>
 #include <memory>
 #include <stdexcept>
+#include <string>
+
+#ifdef _MSC_VER //case insensitivity only on Windows
+#   define strcompare _stricmp
+#   define strncompare _strnicmp
+#else
+#   define strcompare std::strcmp
+#   define strncompare std::strncmp
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
+
+#ifndef UNREFERENCED_PARAMETER
+#   define UNREFERENCED_PARAMETER(p) (void)(p)
+#endif
 
 namespace cyoarguments
 {
     namespace detail
     {
-        #ifndef UNREFERENCED_PARAMETER
-        #   define UNREFERENCED_PARAMETER(p) (void)(p)
-        #endif
-
         class OptionBase
         {
         public:
             virtual void Output() const = 0;
-            virtual void Process(const char* arg) const = 0;
+            virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word) const = 0;
 
         protected:
             template<typename T>
-            void GetValue(const char* arg, T& target) const
+            int GetValue(const char* arg, T& target) const
             {
                 UNREFERENCED_PARAMETER(arg);
                 UNREFERENCED_PARAMETER(target);
                 throw std::logic_error("Unsupported argument type");
             }
             template<>
-            void GetValue(const char* arg, bool& target) const
+            int GetValue(const char* arg, bool& target) const
             {
                 UNREFERENCED_PARAMETER(arg);
                 target = true;
+                return 0;
             }
             template<>
-            void GetValue(const char* arg, int& target) const
+            int GetValue(const char* arg, int& target) const
             {
-                target = std::atoi(arg);
+                char* endptr = nullptr;
+                target = (int)std::strtol(arg, &endptr, 0);
+                return (int)(endptr - arg);
             }
             template<>
-            void GetValue(const char* arg, std::string& target) const
+            int GetValue(const char* arg, float& target) const
             {
-                target = arg;
+                char* endptr = nullptr;
+                target = std::strtof(arg, &endptr);
+                return (int)(endptr - arg);
+            }
+            template<>
+            int GetValue(const char* arg, double& target) const
+            {
+                char* endptr = nullptr;
+                target = std::strtod(arg, &endptr);
+                return (int)(endptr - arg);
+            }
+            template<>
+            int GetValue(const char* arg, std::string& target) const
+            {
+                if (*arg == '=')
+                {
+                    target = (arg + 1);
+                    return ((int)target.size() + 1);
+                }
+                else
+                {
+                    target = arg;
+                    return (int)target.size();
+                }
             }
         };
 
@@ -87,24 +123,81 @@ namespace cyoarguments
             void Output() const override
             {
                 std::cout << "OPTION:";
+#ifdef _MSC_VER
+                if (letter_ != '\x0')
+                    std::cout << " /" << letter_;
+                if (word_ != nullptr)
+                    std::cout << " /" << word_;
+#else
                 if (letter_ != '\x0')
                     std::cout << " -" << letter_;
                 if (word_ != nullptr)
                     std::cout << " --" << word_;
+#endif
                 std::cout << "  " << description_;
                 std::cout << std::endl;
             }
-            void Process(const char* arg) const override
+            bool Process(int argc, char* argv[], int& index, int& ch, bool word) const override
             {
-                arg; //TEMP
+                argc, argv; index; ch; word; //TEMP
 
-                //todo
+                if (word && word_ != nullptr)
+                {
+                    char* argStart = argv[index] + ch;
+
+                    if (strcompare(word_, argStart) == 0)
+                    {
+                        int newIndex = (index + 1);
+                        if (GetValue(argv[newIndex], *target_) >= 1)
+                            index = newIndex;
+                        return true;
+                    }
+
+                    int wordLen = (int)std::strlen(word_);
+                    if (strncompare(word_, argStart, wordLen) == 0)
+                    {
+                        if (argStart[wordLen] == '=')
+                        {
+                            int val = GetValue(argStart + wordLen + 1, *target_);
+                            (val);
+                            //todo
+                        }
+                        else
+                        {
+                            int val = GetValue(argStart + wordLen, *target_);
+                            (val);
+                            //todo
+                        }
+                        return true;
+                    }
+                }
+
+                if (!word && Matches(letter_, argv[index][ch]))
+                {
+                    ++ch;
+                    int len = GetValue(argv[index] + ch, *target_);
+                    ch += len;
+                    return true;
+                }
+
+                return false;
             }
         private:
             char letter_;
             const char* word_;
             const char* description_;
             T* target_;
+
+            bool Matches(char ch1, char ch2) const
+            {
+#ifdef _MSC_VER //case insensitivity only on Windows
+                if ('A' <= ch1 && ch1 <= 'Z')
+                    ch1 |= (1 << 5); //make lowercase
+                if ('A' <= ch2 && ch2 <= 'Z')
+                    ch2 |= (1 << 5); //make lowercase
+#endif
+                return (ch1 == ch2);
+            }
         };
 
         template<typename T>
@@ -122,9 +215,13 @@ namespace cyoarguments
                 std::cout << "  " << description_;
                 std::cout << std::endl;
             }
-            void Process(const char* arg) const override
+            bool Process(int argc, char* argv[], int& index, int& ch, bool word) const override
             {
-                GetValue(arg, *target_);
+                UNREFERENCED_PARAMETER(argc);
+                UNREFERENCED_PARAMETER(word);
+                GetValue(argv[index], *target_);
+                ch = 0;
+                return false;
             }
         private:
             const char* name_;
@@ -141,7 +238,7 @@ namespace cyoarguments
         Arguments(const Arguments&) = delete;
         Arguments& operator =(const Arguments&) = delete;
 
-        Arguments() { }
+        Arguments() = default;
 
         template<typename T>
         void AddOption(char letter, const char* word, const char* description, T& target)
@@ -157,38 +254,12 @@ namespace cyoarguments
 
         void Help() const
         {
-            for (auto& required : required_)
-                required->Output();
-            for (auto& option : options_)
-                option->Output();
+            HelpImpl();
         }
 
-        bool Process(int argc, char* argv[])
+        bool Process(int argc, char* argv[]) const
         {
-            auto nextRequired = required_.begin();
-
-            for (int i = 1; i < argc; ++i)
-            {
-                std::cout << argv[i] << std::endl; //TEMP
-
-                bool ok;
-#ifdef _MSC_VER
-                if (argv[i][0] == '-' || argv[i][0] == '/')
-#else
-                if (argv[i][0] == '-')
-#endif
-                    ok = ProcessOption(argv[i], i < argc - 1 ? argv[i + 1] : nullptr);
-                else
-                    ok = ProcessRequired(argv[i], nextRequired);
-
-                if (!ok)
-                {
-                    std::cerr << "Invalid argument: " << argv[i] << std::endl;
-                    return false;
-                }
-            }
-
-            return true;
+            return ProcessImpl(argc, argv);
         }
 
     private:
@@ -196,23 +267,108 @@ namespace cyoarguments
         OptionsList options_;
         OptionsList required_;
 
-        bool ProcessOption(const char* arg, const char* next) const
+        void HelpImpl() const
         {
-            arg; next;
-            //TODO
+            for (const auto& required : required_)
+                required->Output();
+            for (const auto& option : options_)
+                option->Output();
+        }
+
+        bool ProcessImpl(int argc, char* argv[]) const
+        {
+#ifdef _DEBUG //TEMP
+            std::cout << std::endl;
+            for (int index = 1; index < argc; ++index)
+                std::cout << argv[index] << std::endl;
+#endif
+
+            auto nextRequired = required_.begin();
+
+            for (int index = 1; index < argc; ++index)
+            {
+                bool ok;
+#ifdef _MSC_VER
+                if (argv[index][0] == '-' || argv[index][0] == '/')
+#else
+                if (argv[index][0] == '-')
+#endif
+                    ok = ProcessOptions(argc, argv, index);
+                else
+                    ok = ProcessRequired(argc, argv, index, nextRequired);
+
+                if (!ok)
+                {
+                    std::cerr << "Invalid argument: " << argv[index] << std::endl;
+                    return false;
+                }
+            }
 
             return true;
         }
 
-        bool ProcessRequired(const char* arg, OptionsList::const_iterator& it) const
+        bool ProcessOptions(int argc, char* argv[], int& index) const
+        {
+            int ch = 0;
+
+#ifdef _MSC_VER //only allow 'slash' arguments on Windows
+            if (argv[index][ch] == '/')
+            {
+                ++ch;
+                if (ProcessWord(argc, argv, index, ch))
+                    return true;
+                else
+                    return ProcessLetters(argc, argv, index, ch);
+            }
+#endif
+
+            //'dash' arguments on all OSes
+            assert(argv[index][ch] == '-');
+            ++ch;
+            if (argv[index][ch] == '-')
+            {
+                ++ch;
+                return ProcessWord(argc, argv, index, ch);
+            }
+            else
+                return ProcessLetters(argc, argv, index, ch);
+        }
+
+        bool ProcessWord(int argc, char* argv[], int& index, int& ch) const
+        {
+            for (const auto& option : options_)
+            {
+                if (option->Process(argc, argv, index, ch, true))
+                    return true;
+            }
+            return false;
+        }
+
+        bool ProcessLetters(int argc, char* argv[], int& index, int& ch) const
+        {
+            int indexBak = index;
+            while ((indexBak == index) && (argv[index][ch] != '\x0'))
+            {
+                int chBak = ch;
+                for (const auto& option : options_)
+                {
+                    if (option->Process(argc, argv, index, ch, false))
+                        break;
+                }
+                if (chBak == ch)
+                    return false;
+            }
+            return (argv[index][ch] == '\x0'); //true if at end of arg
+        }
+
+        bool ProcessRequired(int argc, char* argv[], int& index, OptionsList::const_iterator& it) const
         {
             if (it == required_.end())
                 return false;
 
-            (*it)->Process(arg);
-
+            int ch = 0;
+            (*it)->Process(argc, argv, index, ch, true); //TODO: CHECK RETURN CODE?
             ++it;
-
             return true;
         }
     };

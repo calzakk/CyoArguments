@@ -47,8 +47,26 @@ int main(int argc, char* argv[])
         int jobs = 1;
         args.AddOption('j', "jobs", "description for jobs", jobs);
 
+        int threads = 1;
+        args.AddOption('t', "threads", "description for threads", threads);
+
+        std::string name;
+        args.AddOption('n', "name", "description for name", name);
+
+        std::string block;
+        args.AddOption('b', "block", "description for block", block);
+
+        double ratio = 0;
+        args.AddOption('\x0', "ratio", "description for ratio", ratio);
+
+        float angle = 0;
+        args.AddOption('\x0', "angle", "description for angle", angle);
+
         std::string prefix;
-        args.AddOption('P', "prefix", "description for prefix", prefix);
+        args.AddOption('p', "prefix", "description for prefix", prefix);
+
+        std::string suffix;
+        args.AddOption('s', "suffix", "description for suffix", suffix);
 
         bool verbose = false;
         args.AddOption('\x0', "verbose", "description for verbose", verbose);
@@ -56,8 +74,8 @@ int main(int argc, char* argv[])
         std::string filename;
         args.AddRequired("filename", "description for filename", filename);
 
-        int number = 0;
-        args.AddRequired("number", "description for number", number);
+        int count = 0;
+        args.AddRequired("count", "description for count", count);
 
         args.Help();
 
@@ -65,11 +83,29 @@ int main(int argc, char* argv[])
         args.Process(argc, argv);
 #else
         argc, argv; //TEMP
-        int fakeargc = 7;
-        char* fakeargv[] = { "exe_pathname", "-a", "--verbose", "-ij2", "-P=cyo", "results.txt", "9" };
+        //char* fakeargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-nbah", "--blockfive", "--suffix", "ine", "--ratio=9.8", "--angle5.6", "results.txt", "9" };
+        //char* fakeargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/nbah", "/blockfive", "/suffix", "ine", "/ratio=9.8", "/angle5.6", "results.txt", "9" };
+        char* fakeargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/Nbah", "/BLOCKfive", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE5.6", "results.txt", "9" };
+        int fakeargc = (sizeof(fakeargv) / sizeof(fakeargv[0]));
         if (!args.Process(fakeargc, fakeargv))
             return 1;
 #endif
+
+        std::cout << "\nRESULTS:" << std::endl;
+        std::cout << "  all = " << all << std::endl;
+        std::cout << "  ignoreErrors = " << ignoreErrors << std::endl;
+        std::cout << "  jobs = " << jobs << std::endl;
+        std::cout << "  threads = " << threads << std::endl;
+        std::cout << "  name = " << name << std::endl;
+        std::cout << "  block = " << block << std::endl;
+        std::cout << "  ratio = " << ratio << std::endl;
+        std::cout << "  angle = " << angle << std::endl;
+        std::cout << "  prefix = " << prefix << std::endl;
+        std::cout << "  suffix = " << suffix << std::endl;
+        std::cout << "  verbose = " << verbose << std::endl;
+        std::cout << "  filename = " << filename << std::endl;
+        std::cout << "  count = " << count << std::endl;
+        std::cout << std::endl;
 
         return 0;
     }
