@@ -28,6 +28,7 @@ SOFTWARE.
 #define __CYOARGUMENTS_HPP
 
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <list>
 #include <memory>
@@ -35,10 +36,10 @@ SOFTWARE.
 #include <string>
 
 #ifdef _MSC_VER //case insensitivity only on Windows
-#   define strcompare _stricmp
+//#   define strcompare _stricmp
 #   define strncompare _strnicmp
 #else
-#   define strcompare std::strcmp
+//#   define strcompare std::strcmp
 #   define strncompare std::strncmp
 #endif
 
@@ -50,15 +51,108 @@ SOFTWARE.
 
 namespace cyoarguments
 {
-    namespace detail
+    class Arguments;
+
+    ////////////////////////////////////
+
+    template<typename T>
+    class Argument
     {
+    public:
+        Argument() = default;
+        Argument(const T& value) : value_(value) { }
+        bool operator()() const { return !blank_; }
+        T get() const { return value_; }
+
+    protected:
+        bool blank_ = true;
+        T value_;
+        Argument(Argument& src, T&& value) { src.blank_ = false; src.value_ = value; }
+    };
+
+    ////////////////////////////////////
+
+    class Arguments final
+    {
+    public:
+        Arguments(const Arguments&) = delete;
+        Arguments& operator =(const Arguments&) = delete;
+
+        Arguments() = default;
+
+        template<typename T>
+        void AddOption(char letter, const char* word, const char* description, T& target)
+        {
+            if (!std::isalnum(letter))
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+            options_.push_back(std::make_unique<Option<T>>(*this, letter, word, description, target));
+        }
+
+        template<typename T>
+        void AddOption(char letter, const char* description, T& target)
+        {
+            if (!std::isalnum(letter))
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+            options_.push_back(std::make_unique<Option<T>>(*this, letter, nullptr, description, target));
+        }
+
+        template<typename T>
+        void AddOption(const char* word, const char* description, T& target)
+        {
+            if (word == nullptr)
+                throw std::runtime_error("Option is null");
+            auto wordLen = std::strlen(word);
+            if (wordLen < 2)
+                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
+            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
+                throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
+            options_.push_back(std::make_unique<Option<T>>(*this, '\x0', word, description, target));
+        }
+
+        template<typename T>
+        void AddRequired(const char* name, const char* description, T& target)
+        {
+            if (name == nullptr)
+                throw std::runtime_error("Name of required argument is null");
+            if (std::strlen(name) < 1)
+                throw std::runtime_error("Name of required argument has insufficient length");
+            required_.push_back(std::make_unique<Required<T>>(*this, name, description, target));
+        }
+
+        void Help() const
+        {
+            HelpImpl();
+        }
+
+        bool Process(int argc, char* argv[], std::string& error) const
+        {
+            return ProcessImpl(argc, argv, error);
+        }
+
+        bool Process(int argc, char* argv[]) const
+        {
+            std::string error;
+            if (ProcessImpl(argc, argv, error))
+                return true;
+            std::cerr << error << std::endl;
+            return false;
+        }
+
+    private:
         class OptionBase
         {
         public:
+            OptionBase(Arguments& parent) : parent_(&parent) { }
+            virtual ~OptionBase() = 0 { }
+
+            OptionBase& operator=(const OptionBase& src) { parent_ = src.parent_; return *this; }
+
             virtual void Output() const = 0;
-            virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word) const = 0;
+            virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const = 0;
 
         protected:
+            Arguments* parent_;
+
             template<typename T>
             int GetValue(const char* arg, T& target) const
             {
@@ -66,6 +160,7 @@ namespace cyoarguments
                 UNREFERENCED_PARAMETER(target);
                 throw std::logic_error("Unsupported argument type");
             }
+
             template<>
             int GetValue(const char* arg, bool& target) const
             {
@@ -73,6 +168,7 @@ namespace cyoarguments
                 target = true;
                 return 0;
             }
+
             template<>
             int GetValue(const char* arg, int& target) const
             {
@@ -80,6 +176,15 @@ namespace cyoarguments
                 target = (int)std::strtol(arg, &endptr, 0);
                 return (int)(endptr - arg);
             }
+
+            template<>
+            int GetValue(const char* arg, unsigned int& target) const
+            {
+                char* endptr = nullptr;
+                target = (unsigned int)std::strtoul(arg, &endptr, 0);
+                return (int)(endptr - arg);
+            }
+
             template<>
             int GetValue(const char* arg, float& target) const
             {
@@ -87,6 +192,7 @@ namespace cyoarguments
                 target = std::strtof(arg, &endptr);
                 return (int)(endptr - arg);
             }
+
             template<>
             int GetValue(const char* arg, double& target) const
             {
@@ -94,6 +200,7 @@ namespace cyoarguments
                 target = std::strtod(arg, &endptr);
                 return (int)(endptr - arg);
             }
+
             template<>
             int GetValue(const char* arg, std::string& target) const
             {
@@ -108,6 +215,25 @@ namespace cyoarguments
                     return (int)target.size();
                 }
             }
+
+            template<typename T>
+            class SetArgument final : public Argument<T>
+            {
+            public:
+                SetArgument(Argument<T>& target, T&& value)
+                    : Argument<T>(target, std::move(value))
+                {
+                }
+            };
+
+            template<typename T>
+            int GetValue(const char* arg, Argument<T>& target) const
+            {
+                T value;
+                int ret = GetValue(arg, value);
+                SetArgument<T>(target, std::move(value));
+                return ret;
+            }
         };
 
         using OptionPtr = std::unique_ptr<OptionBase>;
@@ -116,10 +242,11 @@ namespace cyoarguments
         class Option final : public OptionBase
         {
         public:
-            Option(char letter, const char* word, const char* description, T& target)
-                : letter_(letter), word_(word), description_(description), target_(&target)
+            Option(Arguments& parent, char letter, const char* word, const char* description, T& target)
+                : OptionBase(parent), letter_(letter), word_(word), description_(description), target_(&target)
             {
             }
+
             void Output() const override
             {
                 std::cout << "OPTION:";
@@ -137,51 +264,96 @@ namespace cyoarguments
                 std::cout << "  " << description_;
                 std::cout << std::endl;
             }
-            bool Process(int argc, char* argv[], int& index, int& ch, bool word) const override
+        
+            bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
             {
-                argc, argv; index; ch; word; //TEMP
+                error = false;
 
                 if (word && word_ != nullptr)
                 {
                     char* argStart = argv[index] + ch;
-
-                    if (strcompare(word_, argStart) == 0)
-                    {
-                        int newIndex = (index + 1);
-                        if (GetValue(argv[newIndex], *target_) >= 1)
-                            index = newIndex;
-                        return true;
-                    }
-
                     int wordLen = (int)std::strlen(word_);
                     if (strncompare(word_, argStart, wordLen) == 0)
                     {
-                        if (argStart[wordLen] == '=')
+                        if (argStart[wordLen] == '\x0')
                         {
-                            int val = GetValue(argStart + wordLen + 1, *target_);
-                            (val);
-                            //todo
+                            // The argument matches the word
+                            if (index + 1 < argc)
+                            {
+                                // Get the value from the next argument...
+                                int newIndex = (index + 1);
+                                T value;
+                                if (GetValue(argv[newIndex], value) >= 1)
+                                {
+                                    *target_ = value;
+                                    index = newIndex;
+                                    return true;
+                                }
+                            }
                         }
                         else
                         {
-                            int val = GetValue(argStart + wordLen, *target_);
-                            (val);
-                            //todo
+                            // The argument starts with the word
+                            if (argStart[wordLen] == '=')
+                                ++wordLen;
+                            T value;
+                            int len = GetValue(argStart + wordLen, value);
+                            if (len >= 1)
+                            {
+                                if (argStart[wordLen + len] == '\x0')
+                                {
+                                    *target_ = value;
+                                    return true;
+                                }
+                            }
+                            else if (len == 0)
+                            {
+                                if (index + 1 < argc)
+                                {
+                                    // Get the value from the next argument...
+                                    int newIndex = (index + 1);
+                                    T value;
+                                    int len = GetValue(argv[newIndex], value);
+                                    if (len >= 1)
+                                    {
+                                        *target_ = value;
+                                        index = newIndex;
+                                        return true;
+                                    }
+                                }
+                            }
                         }
-                        return true;
+                        error = true;
                     }
                 }
-
-                if (!word && Matches(letter_, argv[index][ch]))
+                else if (!word && Matches(letter_, argv[index][ch]))
                 {
                     ++ch;
-                    int len = GetValue(argv[index] + ch, *target_);
-                    ch += len;
-                    return true;
+
+                    if (argv[index][ch] == '=')
+                        ++ch;
+
+                    T value;
+                    int len = GetValue(argv[index] + ch, value);
+                    if (len >= 1)
+                    {
+                        *target_ = value;
+                        ch += len;
+                        return true;
+                    }
+                    else if (index + 1 < argc)
+                    {
+                        // Get value from the next argument...
+                        ch = GetValue(argv[++index], *target_);
+                        return true;
+                    }
+                    else
+                        error = true;
                 }
 
                 return false;
             }
+
         private:
             char letter_;
             const char* word_;
@@ -200,14 +372,32 @@ namespace cyoarguments
             }
         };
 
-        template<typename T>
-        class Required final : public OptionBase
+        class RequiredBase : public OptionBase
         {
         public:
-            Required(const char* name, const char* description, T& target)
-                : name_(name), description_(description), target_(&target)
+            RequiredBase(Arguments& parent, const char* name, const char* description)
+                : OptionBase(parent), name_(name), description_(description)
             {
             }
+
+            virtual ~RequiredBase() = 0 { }
+
+            const char* getName() const { return name_; }
+
+        protected:
+            const char* name_;
+            const char* description_;
+        };
+
+        template<typename T>
+        class Required final : public RequiredBase
+        {
+        public:
+            Required(Arguments& parent, const char* name, const char* description, T& target)
+                : RequiredBase(parent, name, description), target_(&target)
+            {
+            }
+
             void Output() const override
             {
                 std::cout << "REQUIRED:";
@@ -215,57 +405,25 @@ namespace cyoarguments
                 std::cout << "  " << description_;
                 std::cout << std::endl;
             }
-            bool Process(int argc, char* argv[], int& index, int& ch, bool word) const override
+
+            bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
             {
                 UNREFERENCED_PARAMETER(argc);
                 UNREFERENCED_PARAMETER(word);
                 GetValue(argv[index], *target_);
                 ch = 0;
+                error = false;
                 return false;
             }
+
         private:
-            const char* name_;
-            const char* description_;
             T* target_;
         };
-    }
 
-    ///////////////////////////////////
-
-    class Arguments final
-    {
-    public:
-        Arguments(const Arguments&) = delete;
-        Arguments& operator =(const Arguments&) = delete;
-
-        Arguments() = default;
-
-        template<typename T>
-        void AddOption(char letter, const char* word, const char* description, T& target)
-        {
-            options_.push_back(std::make_unique<detail::Option<T>>(letter, word, description, target));
-        }
-
-        template<typename T>
-        void AddRequired(const char* name, const char* description, T& target)
-        {
-            required_.push_back(std::make_unique<detail::Required<T>>(name, description, target));
-        }
-
-        void Help() const
-        {
-            HelpImpl();
-        }
-
-        bool Process(int argc, char* argv[]) const
-        {
-            return ProcessImpl(argc, argv);
-        }
-
-    private:
-        using OptionsList = std::list<detail::OptionPtr>;
+        using OptionsList = std::list<OptionPtr>;
         OptionsList options_;
         OptionsList required_;
+        bool allowEmpty_ = false;
 
         void HelpImpl() const
         {
@@ -275,13 +433,9 @@ namespace cyoarguments
                 option->Output();
         }
 
-        bool ProcessImpl(int argc, char* argv[]) const
+        bool ProcessImpl(int argc, char* argv[], std::string& error) const
         {
-#ifdef _DEBUG //TEMP
-            std::cout << std::endl;
-            for (int index = 1; index < argc; ++index)
-                std::cout << argv[index] << std::endl;
-#endif
+            error.clear();
 
             auto nextRequired = required_.begin();
 
@@ -299,9 +453,21 @@ namespace cyoarguments
 
                 if (!ok)
                 {
-                    std::cerr << "Invalid argument: " << argv[index] << std::endl;
+                    error = "Invalid argument: ";
+                    error += argv[index];
                     return false;
                 }
+            }
+
+            if (nextRequired != required_.end())
+            {
+                auto& req = *nextRequired;
+
+                RequiredBase* pReq = (RequiredBase*)req.get();
+
+                error = "Missing argument: ";
+                error += pReq->getName();
+                return false;
             }
 
             return true;
@@ -338,8 +504,11 @@ namespace cyoarguments
         {
             for (const auto& option : options_)
             {
-                if (option->Process(argc, argv, index, ch, true))
+                bool error;
+                if (option->Process(argc, argv, index, ch, true, error))
                     return true;
+                if (error)
+                    return false;
             }
             return false;
         }
@@ -352,10 +521,13 @@ namespace cyoarguments
                 int chBak = ch;
                 for (const auto& option : options_)
                 {
-                    if (option->Process(argc, argv, index, ch, false))
+                    bool error;
+                    if (option->Process(argc, argv, index, ch, false, error))
                         break;
+                    if (error)
+                        return false;
                 }
-                if (chBak == ch)
+                if ((indexBak == index) && (chBak == ch))
                     return false;
             }
             return (argv[index][ch] == '\x0'); //true if at end of arg
@@ -367,7 +539,8 @@ namespace cyoarguments
                 return false;
 
             int ch = 0;
-            (*it)->Process(argc, argv, index, ch, true); //TODO: CHECK RETURN CODE?
+            bool error;
+            (*it)->Process(argc, argv, index, ch, true, error); //TODO: CHECK RETURN CODE?
             ++it;
             return true;
         }
