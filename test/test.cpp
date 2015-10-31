@@ -26,92 +26,378 @@ SOFTWARE.
 
 #include "cyoarguments.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <list>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace cyoarguments;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int main(int argc, char* argv[])
+#define CHECK(expected, actual) \
+    if (expected != actual) \
+    { \
+        std::cout << "\nline " << __LINE__ << ": value=" << actual << " expected=" << expected; \
+        throw std::runtime_error("Unexpected value"); \
+    }
+
+#define TEST(name, index, setup) \
+    class Test##name##index : public setup \
+        { \
+    public: \
+        static Test##name##index instance; \
+        Test##name##index() \
+        { \
+            TestRunner::instance().AddTest(this); \
+        } \
+    private: \
+        std::string getNameImpl() const override \
+        { \
+            return "Test" ## #name ## #index; \
+        } \
+        void RunImpl() override; \
+    }; \
+    Test##name##index Test##name##index::instance; \
+    void Test##name##index::RunImpl()
+
+namespace
 {
-    try
+    class Test
     {
-        Arguments args;
+    public:
+        std::string getName() const { return getNameImpl(); }
+        void Run() { RunImpl(); }
 
-        bool all = false;
-        args.AddOption('a', "all", "description for all", all);
+    protected:
+        Arguments arguments;
 
-        bool ignoreErrors = false;
-        args.AddOption('i', nullptr, "description for ignoreErrors", ignoreErrors);
+        void ProcessArgs(const std::vector<const char*>& args, bool expectedResult, const char* expectedError)
+        {
+            std::vector<const char*> fullArgs{ "exe_pathname" };
+            std::copy(begin(args), end(args), std::back_inserter(fullArgs));
 
-        int jobs = 1;
-        args.AddOption('j', "jobs", "description for jobs", jobs);
+            std::string actualError;
+            bool actualResult = arguments.Process(fullArgs.size(), (char**)&fullArgs[0], actualError);
 
-        int threads = 1;
-        args.AddOption('t', "threads", "description for threads", threads);
+            if (actualResult != expectedResult)
+            {
+                std::cout << "\nresult=" << actualResult << " expected=" << expectedResult;
+                throw std::runtime_error("Unexpected result");
+            }
 
-        std::string name;
-        args.AddOption('n', "name", "description for name", name);
+            if (actualError.compare(expectedError) != 0)
+            {
+                std::cout << "\nerror=\"" << actualError << "\" expected=\"" << expectedError << "\"";
+                throw std::runtime_error("Unexpected error");
+            }
+        }
 
-        std::string block;
-        args.AddOption('b', "block", "description for block", block);
+    private:
+        virtual std::string getNameImpl() const = 0;
+        virtual void RunImpl() = 0;
+    };
 
-        double ratio = 0;
-        args.AddOption('\x0', "ratio", "description for ratio", ratio);
-
-        float angle = 0;
-        args.AddOption('\x0', "angle", "description for angle", angle);
-
-        std::string prefix;
-        args.AddOption('p', "prefix", "description for prefix", prefix);
-
-        std::string suffix;
-        args.AddOption('s', "suffix", "description for suffix", suffix);
-
-        bool verbose = false;
-        args.AddOption('\x0', "verbose", "description for verbose", verbose);
-
-        std::string filename;
-        args.AddRequired("filename", "description for filename", filename);
-
-        int count = 0;
-        args.AddRequired("count", "description for count", count);
-
-        args.Help();
-
-#if 0
-        args.Process(argc, argv);
-#else
-        argc, argv; //TEMP
-        //char* fakeargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-nbah", "--blockfive", "--suffix", "ine", "--ratio=9.8", "--angle5.6", "results.txt", "9" };
-        //char* fakeargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/nbah", "/blockfive", "/suffix", "ine", "/ratio=9.8", "/angle5.6", "results.txt", "9" };
-        char* fakeargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/Nbah", "/BLOCKfive", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE5.6", "results.txt", "9" };
-        int fakeargc = (sizeof(fakeargv) / sizeof(fakeargv[0]));
-        if (!args.Process(fakeargc, fakeargv))
-            return 1;
-#endif
-
-        std::cout << "\nRESULTS:" << std::endl;
-        std::cout << "  all = " << all << std::endl;
-        std::cout << "  ignoreErrors = " << ignoreErrors << std::endl;
-        std::cout << "  jobs = " << jobs << std::endl;
-        std::cout << "  threads = " << threads << std::endl;
-        std::cout << "  name = " << name << std::endl;
-        std::cout << "  block = " << block << std::endl;
-        std::cout << "  ratio = " << ratio << std::endl;
-        std::cout << "  angle = " << angle << std::endl;
-        std::cout << "  prefix = " << prefix << std::endl;
-        std::cout << "  suffix = " << suffix << std::endl;
-        std::cout << "  verbose = " << verbose << std::endl;
-        std::cout << "  filename = " << filename << std::endl;
-        std::cout << "  count = " << count << std::endl;
-        std::cout << std::endl;
-
-        return 0;
-    }
-    catch (const std::exception& ex)
+    class TestRunner
     {
-        std::cerr << "EXCEPTION: " << ex.what() << std::endl;
-        return 1;
+    public:
+        static TestRunner& instance()
+        {
+            static TestRunner testRunner;
+            return testRunner;
+        }
+
+        void AddTest(Test* test)
+        {
+            tests_.push_back(test);
+        }
+
+        void RunAllTests()
+        {
+            int testNum = 0;
+            int failures = 0;
+            for (auto& test : tests_)
+            {
+                try
+                {
+                    std::cout << "TEST " << ++testNum << ": " << test->getName() << ":";
+                    test->Run();
+                    std::cout << " success" << std::endl;
+                }
+                catch (...)
+                {
+                    ++failures;
+                    std::cout << "\n*** FAILED ***" << std::endl;
+                }
+            }
+            std::cout << '\n' << failures << " failure(s)" << std::endl;
+        }
+
+    private:
+        std::list<Test*> tests_;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Required
+    namespace
+    {
+        class RequiredBase : public Test
+        {
+        public:
+            RequiredBase()
+            {
+                arguments.AddRequired("first", "description", first);
+                arguments.AddRequired("second", "description", second);
+            }
+            std::string first, second;
+        };
+
+        TEST(Required, 1, RequiredBase)
+        {
+            ProcessArgs({}, false, "Missing argument: first");
+        }
+
+        TEST(Required, 2, RequiredBase)
+        {
+            ProcessArgs({ "alpha" }, false, "Missing argument: second");
+        }
+
+        TEST(Required, 3, RequiredBase)
+        {
+            ProcessArgs({ "alpha", "beta" }, true, "");
+        }
+
+        TEST(Required, 4, RequiredBase)
+        {
+            ProcessArgs({ "alpha", "beta", "gamma" }, false, "Invalid argument: gamma");
+        }
     }
+
+    // Letter
+    namespace
+    {
+        class LetterBase : public Test
+        {
+        public:
+            LetterBase()
+            {
+                arguments.AddOption('a', "description", a);
+                arguments.AddOption('b', "description", b);
+            }
+            int a = 0;
+            int b = 0;
+        };
+
+        TEST(Letter, 1, LetterBase)
+        {
+            ProcessArgs({ "-a1" }, true, "");
+            CHECK(1, a);
+            CHECK(0, b);
+        }
+
+        TEST(Letter, 2, LetterBase)
+        {
+            ProcessArgs({ "-a=2" }, true, "");
+            CHECK(2, a);
+            CHECK(0, b);
+        }
+
+        TEST(Letter, 3, LetterBase)
+        {
+            ProcessArgs({ "-a", "3" }, true, "");
+            CHECK(3, a);
+            CHECK(0, b);
+        }
+
+        TEST(Letter, 4, LetterBase)
+        {
+            ProcessArgs({ "-a=", "4" }, true, "");
+            CHECK(4, a);
+            CHECK(0, b);
+        }
+
+        TEST(Letter, 5, LetterBase)
+        {
+            ProcessArgs({ "-a" }, false, "Invalid argument: -a");
+            CHECK(0, a);
+            CHECK(0, b);
+        }
+
+        TEST(Letter, 6, LetterBase)
+        {
+            ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
+            CHECK(0, a);
+            CHECK(0, b);
+        }
+    }
+
+    // Letters
+    namespace
+    {
+        class LettersBase : public Test
+        {
+        public:
+            LettersBase()
+            {
+                arguments.AddOption('x', "description", x);
+                arguments.AddOption('y', "description", y);
+            }
+            int x = 0;
+            int y = 0;
+        };
+
+        TEST(Letters, 1, LettersBase)
+        {
+            ProcessArgs({ "-x1y2" }, true, "");
+            CHECK(1, x);
+            CHECK(2, y);
+        }
+
+        TEST(Letters, 2, LettersBase)
+        {
+            ProcessArgs({ "-x3", "-y4" }, true, "");
+            CHECK(3, x);
+            CHECK(4, y);
+        }
+
+        TEST(Letters, 3, LettersBase)
+        {
+            ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
+            CHECK(5, x);
+            CHECK(6, y);
+        }
+
+        TEST(Letters, 4, LettersBase)
+        {
+            ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
+            CHECK(0, x);
+            CHECK(0, y);
+        }
+    }
+
+    // Word
+    namespace
+    {
+        class WordBase : public Test
+        {
+        public:
+            WordBase()
+            {
+                arguments.AddOption("num", "description", num);
+            }
+            int num = 0;
+        };
+
+        TEST(Word, 1, WordBase)
+        {
+            ProcessArgs({ "--num1" }, true, "");
+            CHECK(1, num);
+        }
+
+        TEST(Word, 2, WordBase)
+        {
+            ProcessArgs({ "--num=2" }, true, "");
+            CHECK(2, num);
+        }
+
+        TEST(Word, 3, WordBase)
+        {
+            ProcessArgs({ "--num", "3" }, true, "");
+            CHECK(3, num);
+        }
+
+        TEST(Word, 4, WordBase)
+        {
+            ProcessArgs({ "--num=", "4" }, true, "");
+            CHECK(4, num);
+        }
+
+        TEST(Word, 5, WordBase)
+        {
+            ProcessArgs({ "--num" }, false, "Invalid argument: --num");
+            CHECK(0, num);
+        }
+
+        TEST(Word, 6, WordBase)
+        {
+            ProcessArgs({ "--num=" }, false, "Invalid argument: --num=");
+            CHECK(0, num);
+        }
+    }
+
+    // Words
+    namespace
+    {
+        class WordsBase : public Test
+        {
+        public:
+            WordsBase()
+            {
+                arguments.AddOption("num", "description", num);
+                arguments.AddOption("val", "description", val);
+            }
+            int num = 0;
+            int val = 0;
+        };
+
+        TEST(Words, 1, WordsBase)
+        {
+            ProcessArgs({ "--num1", "--val2" }, true, "");
+            CHECK(1, num);
+            CHECK(2, val);
+        }
+
+        TEST(Words, 2, WordsBase)
+        {
+            ProcessArgs({ "--num=3", "--val=4" }, true, "");
+            CHECK(3, num);
+            CHECK(4, val);
+        }
+
+        TEST(Words, 3, WordsBase)
+        {
+            ProcessArgs({ "--num", "5", "--val", "6" }, true, "");
+            CHECK(5, num);
+            CHECK(6, val);
+        }
+
+        TEST(Words, 4, WordsBase)
+        {
+            ProcessArgs({ "--num=", "7", "--val=", "8" }, true, "");
+            CHECK(7, num);
+            CHECK(8, val);
+        }
+
+        TEST(Words, 5, WordsBase)
+        {
+            ProcessArgs({ "--num", "--val" }, false, "Invalid argument: --num");
+            CHECK(0, num);
+            CHECK(0, val);
+        }
+
+        TEST(Words, 6, WordsBase)
+        {
+            ProcessArgs({ "--num=", "--val=" }, false, "Invalid argument: --num=");
+            CHECK(0, num);
+            CHECK(0, val);
+        }
+
+        TEST(Words, 7, WordsBase)
+        {
+            ProcessArgs({ "--num9val10" }, false, "Invalid argument: --num9val10");
+            CHECK(0, num);
+            CHECK(0, val);
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+int main()
+{
+    TestRunner::instance().RunAllTests();
+    return 0;
 }
