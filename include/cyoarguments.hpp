@@ -34,6 +34,7 @@ SOFTWARE.
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #ifdef _MSC_VER //case insensitivity only on Windows
 //#   define strcompare _stricmp
@@ -116,6 +117,8 @@ namespace cyoarguments
                 throw std::runtime_error("Name of required argument is null");
             if (std::strlen(name) < 1)
                 throw std::runtime_error("Name of required argument has insufficient length");
+            if (!AllowRequired(T()))
+                throw std::runtime_error((std::string("Disallowed type of required argument: ") + name).c_str());
             required_.push_back(std::make_unique<Required<T>>(*this, name, description, target));
         }
 
@@ -278,10 +281,30 @@ namespace cyoarguments
                         if (argStart[wordLen] == '\x0')
                         {
                             // The argument matches the word
+                            if (IsValueless(T()))
+                            {
+                                //bool
+                                *target_ = true;
+                                return true;
+                            }
+
                             if (index + 1 < argc)
                             {
                                 // Get the value from the next argument...
                                 int newIndex = (index + 1);
+#ifdef _MSC_VER
+                                if (argv[newIndex][0] == '/')
+                                {
+                                    error = true;
+                                    return false;
+                                }
+#endif
+                                if (argv[newIndex][0] == '-')
+                                {
+                                    error = true;
+                                    return false;
+                                }
+
                                 T value;
                                 if (GetValue(argv[newIndex], value) >= 1)
                                 {
@@ -294,8 +317,25 @@ namespace cyoarguments
                         else
                         {
                             // The argument starts with the word
-                            if (argStart[wordLen] == '=')
+                            if (IsValueless(T()))
+                            {
+                                //bool
+                                error = true;
+                                return false;
+                            }
+
+                            if (RequiresEquals(T()))
+                            {
+                                if (argStart[wordLen] != '=')
+                                {
+                                    error = true;
+                                    return false;
+                                }
                                 ++wordLen;
+                            }
+                            else if (argStart[wordLen] == '=')
+                                ++wordLen;
+
                             T value;
                             int len = GetValue(argStart + wordLen, value);
                             if (len >= 1)
@@ -312,6 +352,18 @@ namespace cyoarguments
                                 {
                                     // Get the value from the next argument...
                                     int newIndex = (index + 1);
+#ifdef _MSC_VER
+                                    if (argv[newIndex][0] == '/')
+                                    {
+                                        error = true;
+                                        return false;
+                                    }
+#endif
+                                    if (argv[newIndex][0] == '-')
+                                    {
+                                        error = true;
+                                        return false;
+                                    }
                                     T value;
                                     int len = GetValue(argv[newIndex], value);
                                     if (len >= 1)
@@ -330,8 +382,40 @@ namespace cyoarguments
                 {
                     ++ch;
 
-                    if (argv[index][ch] == '=')
-                        ++ch;
+                    if (IsValueless(T()))
+                    {
+                        // bool
+                        if (argv[index][ch] == '=')
+                        {
+                            error = true;
+                            return false;
+                        }
+                        else
+                        {
+                            *target_ = true;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (RequiresEquals(T()))
+                        {
+                            //non-int
+                            if ((argv[index][ch] != '\0') && (argv[index][ch] != '='))
+                            {
+                                error = true;
+                                return false;
+                            }
+                            else if (argv[index][ch] == '=')
+                                ++ch;
+                        }
+                        else
+                        {
+                            //int
+                            if (argv[index][ch] == '=')
+                                ++ch;
+                        }
+                    }
 
                     T value;
                     int len = GetValue(argv[index] + ch, value);
@@ -370,6 +454,12 @@ namespace cyoarguments
 #endif
                 return (ch1 == ch2);
             }
+
+            template<typename T> bool IsValueless(const T&) const { return false; }
+            template<>           bool IsValueless(const bool&) const { return true; }
+
+            template<typename T> bool RequiresEquals(const T&) const { return true; }
+            template<>           bool RequiresEquals(const int&) const { return false; }
         };
 
         class RequiredBase : public OptionBase
@@ -419,6 +509,9 @@ namespace cyoarguments
         private:
             T* target_;
         };
+
+        template<typename T> bool AllowRequired(const T&) { return true; }
+        template<>           bool AllowRequired(const bool&) { return false; }
 
         using OptionsList = std::list<OptionPtr>;
         OptionsList options_;
