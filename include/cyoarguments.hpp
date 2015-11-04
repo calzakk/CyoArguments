@@ -29,12 +29,15 @@ SOFTWARE.
 
 #include <cassert>
 #include <cctype>
+#include <cstring>
 #include <iostream>
 #include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+
+#include "detail/make_unique.hpp"
 
 #ifdef _MSC_VER //case insensitivity only on Windows
 //#   define strcompare _stricmp
@@ -146,7 +149,7 @@ namespace cyoarguments
         {
         public:
             OptionBase(Arguments& parent) : parent_(&parent) { }
-            virtual ~OptionBase() = 0 { }
+            virtual ~OptionBase() { }
 
             OptionBase& operator=(const OptionBase& src) { parent_ = src.parent_; return *this; }
 
@@ -470,7 +473,7 @@ namespace cyoarguments
             {
             }
 
-            virtual ~RequiredBase() = 0 { }
+            virtual ~RequiredBase() { }
 
             const char* getName() const { return name_; }
 
