@@ -94,19 +94,24 @@ int main(int argc, char* argv[])
         int count = 0;
         args.AddRequired("count", "description for count", count);
 
+        /*bool temp1;
+        args.AddRequired("temp1", "description for temp1", temp1);
+        Argument<bool> temp2;
+        args.AddRequired("temp2", "description for temp2", temp2);*/
+
         args.Help();
 
         argc; argv; //TEMP
 
-        //char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-n=bah", "--block=five", "--suffix", "ine", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
-        char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "results.txt" };
-        //char* testargv[] = { "exe_pathname", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "results.txt", "9", "extra" };
+        //const char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-n=bah", "--block=five", "--suffix", "ine", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
+        const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "results.txt" };
+        //const char* testargv[] = { "exe_pathname", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "results.txt", "9", "extra" };
         int testargc = (sizeof(testargv) / sizeof(testargv[0]));
-        if (!args.Process(testargc, testargv))
+        if (!args.Process(testargc, (char**)testargv))
             return 1;
 
         std::cout << "\nRESULTS:" << std::endl;

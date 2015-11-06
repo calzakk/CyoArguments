@@ -74,7 +74,7 @@ using namespace cyoarguments;
     private: \
         std::string getNameImpl() const override \
         { \
-            return "Test" ## #name ## #index; \
+            return "Test" #name #index; \
         } \
         void RunImpl() override; \
     }; \
@@ -162,16 +162,6 @@ namespace
     // bool
     namespace
     {
-        // Required
-        namespace
-        {
-            TEST(RequiredBool, 1, Test)
-            {
-                bool first = false;
-                CHECK_THROW("Disallowed type of required argument: first", arguments.AddRequired("first", "description", first));
-            }
-        }
-
         // Letter
         namespace
         {

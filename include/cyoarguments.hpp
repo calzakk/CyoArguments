@@ -56,24 +56,112 @@ SOFTWARE.
 
 namespace cyoarguments
 {
-    class Arguments;
-
-    ////////////////////////////////////
-
     template<typename T>
-    class Argument
+    class Argument final
     {
     public:
         Argument() = default;
         Argument(const T& value) : value_(value) { }
         bool operator()() const { return !blank_; }
         T get() const { return value_; }
+        void set(T value) { value_ = std::move(value); }
 
     protected:
         bool blank_ = true;
         T value_;
         Argument(Argument& src, T&& value) { src.blank_ = false; src.value_ = value; }
     };
+
+    ////////////////////////////////////
+
+    namespace detail
+    {
+        template<typename T> struct allowRequired : std::true_type { };
+        template<> struct allowRequired<bool> : std::false_type { };
+        template<typename T> struct allowRequired<Argument<T>> : std::false_type { };
+
+        template<typename T> struct valueless : std::false_type { };
+        template<> struct valueless<bool> : std::true_type { };
+        template<> struct valueless<Argument<bool>> : std::true_type { };
+
+        template<typename T> struct requiresEquals : std::true_type { };
+        template<> struct requiresEquals<int> : std::false_type { };
+        template<> struct requiresEquals<Argument<int>> : std::false_type { };
+        template<> struct requiresEquals<unsigned int> : std::false_type { };
+        template<> struct requiresEquals<Argument<unsigned int>> : std::false_type { };
+
+        template<typename T>
+        int GetValue(const char* arg, T& target)
+        {
+            UNREFERENCED_PARAMETER(arg);
+            UNREFERENCED_PARAMETER(target);
+            throw std::logic_error("Unsupported argument type");
+        }
+
+        template<>
+        int GetValue(const char* arg, bool& target)
+        {
+            UNREFERENCED_PARAMETER(arg);
+            target = true;
+            return 0;
+        }
+
+        template<>
+        int GetValue(const char* arg, int& target)
+        {
+            char* endptr = nullptr;
+            target = (int)std::strtol(arg, &endptr, 0);
+            return (int)(endptr - arg);
+        }
+
+        template<>
+        int GetValue(const char* arg, unsigned int& target)
+        {
+            char* endptr = nullptr;
+            target = (unsigned int)std::strtoul(arg, &endptr, 0);
+            return (int)(endptr - arg);
+        }
+
+        template<>
+        int GetValue(const char* arg, float& target)
+        {
+            char* endptr = nullptr;
+            target = std::strtof(arg, &endptr);
+            return (int)(endptr - arg);
+        }
+
+        template<>
+        int GetValue(const char* arg, double& target)
+        {
+            char* endptr = nullptr;
+            target = std::strtod(arg, &endptr);
+            return (int)(endptr - arg);
+        }
+
+        template<>
+        int GetValue(const char* arg, std::string& target)
+        {
+            if (*arg == '=')
+            {
+                target = (arg + 1);
+                return ((int)target.size() + 1);
+            }
+            else
+            {
+                target = arg;
+                return (int)target.size();
+            }
+        }
+
+        template<typename T>
+        int GetValue(const char* arg, Argument<T>& target)
+        {
+            T value;
+            int ret = GetValue(arg, value);
+            target.set(value);
+            return ret;
+        }
+    }
 
     ////////////////////////////////////
 
@@ -117,12 +205,11 @@ namespace cyoarguments
         template<typename T>
         void AddRequired(const char* name, const char* description, T& target)
         {
+            static_assert(detail::allowRequired<T>::value, "Disallowed type of required argument");
             if (name == nullptr)
                 throw std::runtime_error("Name of required argument is null");
             if (std::strlen(name) < 1)
                 throw std::runtime_error("Name of required argument has insufficient length");
-            if (!AllowRequired(T()))
-                throw std::runtime_error((std::string("Disallowed type of required argument: ") + name).c_str());
             required_.push_back(std::make_unique<Required<T>>(*this, name, description, target));
         }
 
@@ -159,99 +246,7 @@ namespace cyoarguments
 
         protected:
             Arguments* parent_;
-
-            template<typename T>
-            int GetValue(const char* arg, T& target) const
-            {
-                UNREFERENCED_PARAMETER(arg);
-                UNREFERENCED_PARAMETER(target);
-                throw std::logic_error("Unsupported argument type");
-            }
-
-            template<>
-            int GetValue(const char* arg, bool& target) const
-            {
-                UNREFERENCED_PARAMETER(arg);
-                target = true;
-                return 0;
-            }
-
-            template<>
-            int GetValue(const char* arg, int& target) const
-            {
-                char* endptr = nullptr;
-                target = (int)std::strtol(arg, &endptr, 0);
-                return (int)(endptr - arg);
-            }
-
-            template<>
-            int GetValue(const char* arg, unsigned int& target) const
-            {
-                char* endptr = nullptr;
-                target = (unsigned int)std::strtoul(arg, &endptr, 0);
-                return (int)(endptr - arg);
-            }
-
-            template<>
-            int GetValue(const char* arg, float& target) const
-            {
-                char* endptr = nullptr;
-                target = std::strtof(arg, &endptr);
-                return (int)(endptr - arg);
-            }
-
-            template<>
-            int GetValue(const char* arg, double& target) const
-            {
-                char* endptr = nullptr;
-                target = std::strtod(arg, &endptr);
-                return (int)(endptr - arg);
-            }
-
-            template<>
-            int GetValue(const char* arg, std::string& target) const
-            {
-                if (*arg == '=')
-                {
-                    target = (arg + 1);
-                    return ((int)target.size() + 1);
-                }
-                else
-                {
-                    target = arg;
-                    return (int)target.size();
-                }
-            }
-
-            template<typename T>
-            class SetArgument final : public Argument<T>
-            {
-            public:
-                SetArgument(Argument<T>& target, T&& value)
-                    : Argument<T>(target, std::move(value))
-                {
-                }
-            };
-
-            template<typename T>
-            int GetValue(const char* arg, Argument<T>& target) const
-            {
-                T value;
-                int ret = GetValue(arg, value);
-                SetArgument<T>(target, std::move(value));
-                return ret;
-            }
         };
-
-        template<typename T> struct valueless : std::false_type { };
-        template<> struct valueless<bool> : std::true_type { };
-        template<> struct valueless<Argument<bool>> : std::true_type { };
-
-        template<typename T> struct requiresEquals : std::true_type { };
-        template<> struct requiresEquals<int> : std::false_type { };
-        template<> struct requiresEquals<Argument<int>> : std::false_type { };
-        template<> struct requiresEquals<unsigned int> : std::false_type { };
-        template<> struct requiresEquals<Argument<unsigned int>> : std::false_type { };
 
         using OptionPtr = std::unique_ptr<OptionBase>;
 
@@ -298,7 +293,7 @@ namespace cyoarguments
                             if (valueless_)
                             {
                                 //bool
-                                GetValue(argv[index], *target_);
+                                detail::GetValue(argv[index], *target_);
                                 return true;
                             }
 
@@ -320,7 +315,7 @@ namespace cyoarguments
                                 }
 
                                 T value;
-                                if (GetValue(argv[newIndex], value) >= 1)
+                                if (detail::GetValue(argv[newIndex], value) >= 1)
                                 {
                                     *target_ = value;
                                     index = newIndex;
@@ -351,7 +346,7 @@ namespace cyoarguments
                                 ++wordLen;
 
                             T value;
-                            int len = GetValue(argStart + wordLen, value);
+                            int len = detail::GetValue(argStart + wordLen, value);
                             if (len >= 1)
                             {
                                 if (argStart[wordLen + len] == '\x0')
@@ -379,7 +374,7 @@ namespace cyoarguments
                                         return false;
                                     }
                                     T value;
-                                    int len = GetValue(argv[newIndex], value);
+                                    int len = detail::GetValue(argv[newIndex], value);
                                     if (len >= 1)
                                     {
                                         *target_ = value;
@@ -406,7 +401,7 @@ namespace cyoarguments
                         }
                         else
                         {
-                            GetValue(argv[index], *target_);
+                            detail::GetValue(argv[index], *target_);
                             return true;
                         }
                     }
@@ -432,7 +427,7 @@ namespace cyoarguments
                     }
 
                     T value;
-                    int len = GetValue(argv[index] + ch, value);
+                    int len = detail::GetValue(argv[index] + ch, value);
                     if (len >= 1)
                     {
                         *target_ = value;
@@ -442,7 +437,7 @@ namespace cyoarguments
                     else if (index + 1 < argc)
                     {
                         // Get value from the next argument...
-                        ch = GetValue(argv[++index], *target_);
+                        ch = detail::GetValue(argv[++index], *target_);
                         return true;
                     }
                     else
@@ -453,8 +448,8 @@ namespace cyoarguments
             }
 
         private:
-            const bool valueless_ = valueless<T>::value;
-            const bool requiresEquals_ = requiresEquals<T>::value;
+            const bool valueless_ = detail::valueless<T>::value;
+            const bool requiresEquals_ = detail::requiresEquals<T>::value;
             char letter_;
             const char* word_;
             const char* description_;
@@ -510,7 +505,7 @@ namespace cyoarguments
             {
                 UNREFERENCED_PARAMETER(argc);
                 UNREFERENCED_PARAMETER(word);
-                GetValue(argv[index], *target_);
+                detail::GetValue(argv[index], *target_);
                 ch = 0;
                 error = false;
                 return false;
@@ -519,9 +514,6 @@ namespace cyoarguments
         private:
             T* target_;
         };
-
-        template<typename T> bool AllowRequired(const T&) { return true; }
-        template<>           bool AllowRequired(const bool&) { return false; }
 
         using OptionsList = std::list<OptionPtr>;
         OptionsList options_;
