@@ -27,6 +27,7 @@ SOFTWARE.
 #ifndef __CYOARGUMENTS_HPP
 #define __CYOARGUMENTS_HPP
 
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cstring>
@@ -242,6 +243,16 @@ namespace cyoarguments
             }
         };
 
+        template<typename T> struct valueless : std::false_type { };
+        template<> struct valueless<bool> : std::true_type { };
+        template<> struct valueless<Argument<bool>> : std::true_type { };
+
+        template<typename T> struct requiresEquals : std::true_type { };
+        template<> struct requiresEquals<int> : std::false_type { };
+        template<> struct requiresEquals<Argument<int>> : std::false_type { };
+        template<> struct requiresEquals<unsigned int> : std::false_type { };
+        template<> struct requiresEquals<Argument<unsigned int>> : std::false_type { };
+
         using OptionPtr = std::unique_ptr<OptionBase>;
 
         template<typename T>
@@ -284,10 +295,10 @@ namespace cyoarguments
                         if (argStart[wordLen] == '\x0')
                         {
                             // The argument matches the word
-                            if (IsValueless(T()))
+                            if (valueless_)
                             {
                                 //bool
-                                *target_ = true;
+                                GetValue(argv[index], *target_);
                                 return true;
                             }
 
@@ -320,14 +331,14 @@ namespace cyoarguments
                         else
                         {
                             // The argument starts with the word
-                            if (IsValueless(T()))
+                            if (valueless_)
                             {
                                 //bool
                                 error = true;
                                 return false;
                             }
 
-                            if (RequiresEquals(T()))
+                            if (requiresEquals_)
                             {
                                 if (argStart[wordLen] != '=')
                                 {
@@ -385,7 +396,7 @@ namespace cyoarguments
                 {
                     ++ch;
 
-                    if (IsValueless(T()))
+                    if (valueless_)
                     {
                         // bool
                         if (argv[index][ch] == '=')
@@ -395,13 +406,13 @@ namespace cyoarguments
                         }
                         else
                         {
-                            *target_ = true;
+                            GetValue(argv[index], *target_);
                             return true;
                         }
                     }
                     else
                     {
-                        if (RequiresEquals(T()))
+                        if (requiresEquals_)
                         {
                             //non-int
                             if ((argv[index][ch] != '\0') && (argv[index][ch] != '='))
@@ -442,6 +453,8 @@ namespace cyoarguments
             }
 
         private:
+            const bool valueless_ = valueless<T>::value;
+            const bool requiresEquals_ = requiresEquals<T>::value;
             char letter_;
             const char* word_;
             const char* description_;
@@ -457,12 +470,6 @@ namespace cyoarguments
 #endif
                 return (ch1 == ch2);
             }
-
-            template<typename T> bool IsValueless(const T&) const { return false; }
-            template<>           bool IsValueless(const bool&) const { return true; }
-
-            template<typename T> bool RequiresEquals(const T&) const { return true; }
-            template<>           bool RequiresEquals(const int&) const { return false; }
         };
 
         class RequiredBase : public OptionBase

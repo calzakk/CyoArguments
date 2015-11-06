@@ -71,10 +71,10 @@ int main(int argc, char* argv[])
         args.AddOption('b', "block", "description for block", block);
 
         double ratio = 0;
-        args.AddOption('\x0', "ratio", "description for ratio", ratio);
+        args.AddOption("ratio", "description for ratio", ratio);
 
         float angle = 0;
-        args.AddOption('\x0', "angle", "description for angle", angle);
+        args.AddOption("angle", "description for angle", angle);
 
         std::string prefix;
         args.AddOption('p', "prefix", "description for prefix", prefix);
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
         args.AddOption('s', "suffix", "description for suffix", suffix);
 
         bool verbose = false;
-        args.AddOption('\x0', "verbose", "description for verbose", verbose);
+        args.AddOption("verbose", "description for verbose", verbose);
 
         Argument<bool> quiet;
         args.AddOption('q', "quiet", "description for quiet", quiet);
@@ -98,10 +98,10 @@ int main(int argc, char* argv[])
 
         argc; argv; //TEMP
 
-        //char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-nbah", "--blockfive", "--suffix", "ine", "--ratio=9.8", "--angle5.6", "-q", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/nbah", "/blockfive", "/suffix", "ine", "/ratio=9.8", "/angle5.6", "/q", "results.txt", "9" };
-        //char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/Nbah", "/BLOCKfive", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE5.6", "/Q", "results.txt", "9" };
-        char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/Nbah", "/BLOCKfive", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE5.6", "results.txt", "9" };
+        //char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-n=bah", "--block=five", "--suffix", "ine", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
+        //char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
+        //char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
+        char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
         //char* testargv[] = { "exe_pathname", "results.txt" };
         //char* testargv[] = { "exe_pathname", "results.txt", "9" };
         //char* testargv[] = { "exe_pathname", "results.txt", "9", "extra" };
