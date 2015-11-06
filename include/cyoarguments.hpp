@@ -56,6 +56,10 @@ SOFTWARE.
 
 namespace cyoarguments
 {
+    class Arguments;
+
+    ////////////////////////////////////
+
     template<typename T>
     class Argument final
     {
@@ -161,78 +165,7 @@ namespace cyoarguments
             target.set(value);
             return ret;
         }
-    }
 
-    ////////////////////////////////////
-
-    class Arguments final
-    {
-    public:
-        Arguments(const Arguments&) = delete;
-        Arguments& operator =(const Arguments&) = delete;
-
-        Arguments() = default;
-
-        template<typename T>
-        void AddOption(char letter, const char* word, const char* description, T& target)
-        {
-            if (!std::isalnum(letter))
-                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
-            options_.push_back(std::make_unique<Option<T>>(*this, letter, word, description, target));
-        }
-
-        template<typename T>
-        void AddOption(char letter, const char* description, T& target)
-        {
-            if (!std::isalnum(letter))
-                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
-            options_.push_back(std::make_unique<Option<T>>(*this, letter, nullptr, description, target));
-        }
-
-        template<typename T>
-        void AddOption(const char* word, const char* description, T& target)
-        {
-            if (word == nullptr)
-                throw std::runtime_error("Option is null");
-            auto wordLen = std::strlen(word);
-            if (wordLen < 2)
-                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
-            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
-                throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
-            options_.push_back(std::make_unique<Option<T>>(*this, '\x0', word, description, target));
-        }
-
-        template<typename T>
-        void AddRequired(const char* name, const char* description, T& target)
-        {
-            static_assert(detail::allowRequired<T>::value, "Disallowed type of required argument");
-            if (name == nullptr)
-                throw std::runtime_error("Name of required argument is null");
-            if (std::strlen(name) < 1)
-                throw std::runtime_error("Name of required argument has insufficient length");
-            required_.push_back(std::make_unique<Required<T>>(*this, name, description, target));
-        }
-
-        void Help() const
-        {
-            HelpImpl();
-        }
-
-        bool Process(int argc, char* argv[], std::string& error) const
-        {
-            return ProcessImpl(argc, argv, error);
-        }
-
-        bool Process(int argc, char* argv[]) const
-        {
-            std::string error;
-            if (ProcessImpl(argc, argv, error))
-                return true;
-            std::cerr << error << std::endl;
-            return false;
-        }
-
-    private:
         class OptionBase
         {
         public:
@@ -276,7 +209,7 @@ namespace cyoarguments
                 std::cout << "  " << description_;
                 std::cout << std::endl;
             }
-        
+
             bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
             {
                 error = false;
@@ -514,8 +447,79 @@ namespace cyoarguments
         private:
             T* target_;
         };
+    }
 
-        using OptionsList = std::list<OptionPtr>;
+    ////////////////////////////////////
+
+    class Arguments final
+    {
+    public:
+        Arguments(const Arguments&) = delete;
+        Arguments& operator =(const Arguments&) = delete;
+
+        Arguments() = default;
+
+        template<typename T>
+        void AddOption(char letter, const char* word, const char* description, T& target)
+        {
+            if (!std::isalnum(letter))
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+            options_.push_back(std::make_unique<detail::Option<T>>(*this, letter, word, description, target));
+        }
+
+        template<typename T>
+        void AddOption(char letter, const char* description, T& target)
+        {
+            if (!std::isalnum(letter))
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+            options_.push_back(std::make_unique<detail::Option<T>>(*this, letter, nullptr, description, target));
+        }
+
+        template<typename T>
+        void AddOption(const char* word, const char* description, T& target)
+        {
+            if (word == nullptr)
+                throw std::runtime_error("Option is null");
+            auto wordLen = std::strlen(word);
+            if (wordLen < 2)
+                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
+            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
+                throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
+            options_.push_back(std::make_unique<detail::Option<T>>(*this, '\x0', word, description, target));
+        }
+
+        template<typename T>
+        void AddRequired(const char* name, const char* description, T& target)
+        {
+            static_assert(detail::allowRequired<T>::value, "Disallowed type of required argument");
+            if (name == nullptr)
+                throw std::runtime_error("Name of required argument is null");
+            if (std::strlen(name) < 1)
+                throw std::runtime_error("Name of required argument has insufficient length");
+            required_.push_back(std::make_unique<detail::Required<T>>(*this, name, description, target));
+        }
+
+        void Help() const
+        {
+            HelpImpl();
+        }
+
+        bool Process(int argc, char* argv[], std::string& error) const
+        {
+            return ProcessImpl(argc, argv, error);
+        }
+
+        bool Process(int argc, char* argv[]) const
+        {
+            std::string error;
+            if (ProcessImpl(argc, argv, error))
+                return true;
+            std::cerr << error << std::endl;
+            return false;
+        }
+
+    private:
+        using OptionsList = std::list<detail::OptionPtr>;
         OptionsList options_;
         OptionsList required_;
         bool allowEmpty_ = false;
@@ -558,7 +562,7 @@ namespace cyoarguments
             {
                 auto& req = *nextRequired;
 
-                RequiredBase* pReq = (RequiredBase*)req.get();
+                detail::RequiredBase* pReq = (detail::RequiredBase*)req.get();
 
                 error = "Missing argument: ";
                 error += pReq->getName();
