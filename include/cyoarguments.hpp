@@ -68,7 +68,9 @@ namespace cyoarguments
         Argument(const T& value) : value_(value) { }
         bool operator()() const { return !blank_; }
         T get() const { return value_; }
-        void set(T value) { value_ = std::move(value); }
+        void set(T value) {
+            value_ = std::move(value);
+        }
 
     protected:
         bool blank_ = true;
@@ -169,16 +171,13 @@ namespace cyoarguments
         class OptionBase
         {
         public:
-            OptionBase(Arguments& parent) : parent_(&parent) { }
             virtual ~OptionBase() { }
-
-            OptionBase& operator=(const OptionBase& src) { parent_ = src.parent_; return *this; }
 
             virtual void Output() const = 0;
             virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const = 0;
 
         protected:
-            Arguments* parent_;
+            static const int optionWidth_ = 20;
         };
 
         using OptionPtr = std::unique_ptr<OptionBase>;
@@ -187,26 +186,65 @@ namespace cyoarguments
         class Option final : public OptionBase
         {
         public:
-            Option(Arguments& parent, char letter, const char* word, const char* description, T& target)
-                : OptionBase(parent), letter_(letter), word_(word), description_(description), target_(&target)
+            Option(char letter, const char* word, const char* description, T& target)
+                : letter_(letter), word_(word), description_(description), target_(&target)
+            {
+            }
+
+            Option(char letter, const char* description, T& target)
+                : letter_(letter), word_(nullptr), description_(description), target_(&target)
+            {
+            }
+
+            Option(const char* word, const char* description, T& target)
+                : letter_('\0'), word_(word), description_(description), target_(&target)
             {
             }
 
             void Output() const override
             {
-                std::cout << "OPTION:";
+                std::cout << "  ";
+
+                int len = 4;
+
 #ifdef _MSC_VER
-                if (letter_ != '\x0')
-                    std::cout << " /" << letter_;
+                if (letter_ != '\0')
+                    std::cout << '/' << letter_ << (word_ != nullptr ? ", " : "  ");
+                else
+                    std::cout << "    "; //4 spaces
+
                 if (word_ != nullptr)
-                    std::cout << " /" << word_;
+                {
+                    std::cout << '/' << word_;
+                    len += ((int)std::strlen(word_) + 1);
+                    if (!valueless_)
+                    {
+                        std::cout << "=X";
+                        len += 2;
+                    }
+                }
 #else
-                if (letter_ != '\x0')
-                    std::cout << " -" << letter_;
+                if (letter_ != '\0')
+                    std::cout << '-' << letter_ << (word_ != nullptr ? ", " : "  ");
+                else
+                    std::cout << "    "; //4 spaces
+
                 if (word_ != nullptr)
-                    std::cout << " --" << word_;
+                {
+                    std::cout << "--" << word_;
+                    len += ((int)std::strlen(word_) + 2);
+                    if (!valueless_)
+                    {
+                        std::cout << "=X";
+                        len += 2;
+                    }
+                }
 #endif
-                std::cout << "  " << description_;
+
+                for (int i = len; i < optionWidth_; ++i)
+                    std::cout << ' ';
+
+                std::cout << description_;
                 std::cout << std::endl;
             }
 
@@ -220,7 +258,7 @@ namespace cyoarguments
                     int wordLen = (int)std::strlen(word_);
                     if (strncompare(word_, argStart, wordLen) == 0)
                     {
-                        if (argStart[wordLen] == '\x0')
+                        if (argStart[wordLen] == '\0')
                         {
                             // The argument matches the word
                             if (valueless_)
@@ -282,7 +320,7 @@ namespace cyoarguments
                             int len = detail::GetValue(argStart + wordLen, value);
                             if (len >= 1)
                             {
-                                if (argStart[wordLen + len] == '\x0')
+                                if (argStart[wordLen + len] == '\0')
                                 {
                                     *target_ = value;
                                     return true;
@@ -403,8 +441,8 @@ namespace cyoarguments
         class RequiredBase : public OptionBase
         {
         public:
-            RequiredBase(Arguments& parent, const char* name, const char* description)
-                : OptionBase(parent), name_(name), description_(description)
+            RequiredBase(const char* name, const char* description)
+                : name_(name), description_(description)
             {
             }
 
@@ -421,17 +459,18 @@ namespace cyoarguments
         class Required final : public RequiredBase
         {
         public:
-            Required(Arguments& parent, const char* name, const char* description, T& target)
-                : RequiredBase(parent, name, description), target_(&target)
+            Required(const char* name, const char* description, T& target)
+                : RequiredBase(name, description), target_(&target)
             {
             }
 
             void Output() const override
             {
-                std::cout << "REQUIRED:";
-                std::cout << " " << name_;
-                std::cout << "  " << description_;
-                std::cout << std::endl;
+                std::cout << "  " << name_;
+                for (auto i = std::strlen(name_); i < optionWidth_; ++i)
+                    std::cout << ' ';
+                std::cout << description_;
+                std::cout << '\n';
             }
 
             bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
@@ -459,44 +498,40 @@ namespace cyoarguments
 
         Arguments() = default;
 
+        void SetName(std::string name) { name_ = std::move(name); }
+
+        void SetHeader(std::string header) { header_ = std::move(header); }
+
+        void SetFooter(std::string footer) { footer_ = std::move(footer); }
+
         template<typename T>
         void AddOption(char letter, const char* word, const char* description, T& target)
         {
-            if (!std::isalnum(letter))
-                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
-            options_.push_back(std::make_unique<detail::Option<T>>(*this, letter, word, description, target));
+            VerifyLetter(letter);
+            VerifyWord(word);
+            options_.push_back(std::make_unique<detail::Option<T>>(letter, word, description, target));
         }
 
         template<typename T>
         void AddOption(char letter, const char* description, T& target)
         {
-            if (!std::isalnum(letter))
-                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
-            options_.push_back(std::make_unique<detail::Option<T>>(*this, letter, nullptr, description, target));
+            VerifyLetter(letter);
+            options_.push_back(std::make_unique<detail::Option<T>>(letter, nullptr, description, target));
         }
 
         template<typename T>
         void AddOption(const char* word, const char* description, T& target)
         {
-            if (word == nullptr)
-                throw std::runtime_error("Option is null");
-            auto wordLen = std::strlen(word);
-            if (wordLen < 2)
-                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
-            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
-                throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
-            options_.push_back(std::make_unique<detail::Option<T>>(*this, '\x0', word, description, target));
+            VerifyWord(word);
+            options_.push_back(std::make_unique<detail::Option<T>>('\0', word, description, target));
         }
 
         template<typename T>
         void AddRequired(const char* name, const char* description, T& target)
         {
             static_assert(detail::allowRequired<T>::value, "Disallowed type of required argument");
-            if (name == nullptr)
-                throw std::runtime_error("Name of required argument is null");
-            if (std::strlen(name) < 1)
-                throw std::runtime_error("Name of required argument has insufficient length");
-            required_.push_back(std::make_unique<detail::Required<T>>(*this, name, description, target));
+            VerifyRequired(name);
+            required_.push_back(std::make_unique<detail::Required<T>>(name, description, target));
         }
 
         void Help() const
@@ -520,16 +555,72 @@ namespace cyoarguments
 
     private:
         using OptionsList = std::list<detail::OptionPtr>;
+
+        std::string name_;
+        std::string header_;
+        std::string footer_;
         OptionsList options_;
         OptionsList required_;
         bool allowEmpty_ = false;
 
+        void VerifyLetter(char letter)
+        {
+            if (!std::isalnum(letter))
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+        }
+
+        void VerifyWord(const char* word)
+        {
+            if (word == nullptr)
+                throw std::runtime_error("Option cannot be null");
+            auto wordLen = std::strlen(word);
+            if (wordLen < 2)
+                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
+            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
+                throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
+        }
+
+        void VerifyRequired(const char* name)
+        {
+            if (name == nullptr)
+                throw std::runtime_error("Name of required argument is null");
+            if (std::strlen(name) < 1)
+                throw std::runtime_error("Name of required argument has insufficient length");
+        }
+
         void HelpImpl() const
         {
+            if (!header_.empty())
+                std::cout << header_ << "\n\n";
+
+            std::cout << "Usage:";
+            if (!name_.empty())
+                std::cout << ' ' << name_;
+            if (!options_.empty())
+                std::cout << " [OPTION...]";
             for (const auto& required : required_)
-                required->Output();
-            for (const auto& option : options_)
-                option->Output();
+                std::cout << ' ' << ((detail::RequiredBase*)required.get())->getName();
+            std::cout << "\n\n";
+
+            if (!required_.empty())
+            {
+                for (const auto& required : required_)
+                    required->Output();
+                std::cout << '\n';
+            }
+
+            if (!options_.empty())
+            {
+                std::cout << "Options:\n";
+                for (const auto& option : options_)
+                    option->Output();
+                std::cout << '\n';
+            }
+
+            if (!footer_.empty())
+                std::cout << footer_ << '\n';
+
+            std::cout << std::endl;
         }
 
         bool ProcessImpl(int argc, char* argv[], std::string& error) const
@@ -615,7 +706,7 @@ namespace cyoarguments
         bool ProcessLetters(int argc, char* argv[], int& index, int& ch) const
         {
             int indexBak = index;
-            while ((indexBak == index) && (argv[index][ch] != '\x0'))
+            while ((indexBak == index) && (argv[index][ch] != '\0'))
             {
                 int chBak = ch;
                 for (const auto& option : options_)
@@ -629,7 +720,7 @@ namespace cyoarguments
                 if ((indexBak == index) && (chBak == ch))
                     return false;
             }
-            return (argv[index][ch] == '\x0'); //true if at end of arg
+            return (argv[index][ch] == '\0'); //true if at end of arg
         }
 
         bool ProcessRequired(int argc, char* argv[], int& index, OptionsList::const_iterator& it) const
@@ -643,6 +734,15 @@ namespace cyoarguments
             ++it;
             return true;
         }
+    };
+
+    class Version final
+    {
+    public:
+        static const char* Str() { return "0.1.0"; }
+        static int Major() { return 0; }
+        static int Minor() { return 1; }
+        static int Patch() { return 0; }
     };
 }
 

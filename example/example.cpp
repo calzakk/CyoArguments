@@ -52,11 +52,17 @@ int main(int argc, char* argv[])
     {
         Arguments args;
 
+        args.SetName("example");
+
+        args.SetHeader(std::string("CyoArguments example, version ") + Version::Str());
+
+        args.SetFooter("See https://github.com/calzakk/CyoArguments");
+
         bool all = false;
         args.AddOption('a', "all", "description for all", all);
 
         bool ignoreErrors = false;
-        args.AddOption('i', nullptr, "description for ignoreErrors", ignoreErrors);
+        args.AddOption('i', "description for ignoreErrors", ignoreErrors);
 
         int jobs = 1;
         args.AddOption('j', "jobs", "description for jobs", jobs);
@@ -94,10 +100,12 @@ int main(int argc, char* argv[])
         int count = 0;
         args.AddRequired("count", "description for count", count);
 
-        /*bool temp1;
+#if 0
+        bool temp1;
         args.AddRequired("temp1", "description for temp1", temp1);
         Argument<bool> temp2;
-        args.AddRequired("temp2", "description for temp2", temp2);*/
+        args.AddRequired("temp2", "description for temp2", temp2);
+#endif
 
         args.Help();
 
@@ -107,6 +115,7 @@ int main(int argc, char* argv[])
         //const char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
         //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
         const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6" };
         //const char* testargv[] = { "exe_pathname", "results.txt" };
         //const char* testargv[] = { "exe_pathname", "results.txt", "9" };
         //const char* testargv[] = { "exe_pathname", "results.txt", "9", "extra" };
@@ -114,7 +123,7 @@ int main(int argc, char* argv[])
         if (!args.Process(testargc, (char**)testargv))
             return 1;
 
-        std::cout << "\nRESULTS:" << std::endl;
+        std::cout << "RESULTS:" << std::endl;
         std::cout << "  all = " << all << std::endl;
         std::cout << "  ignoreErrors = " << ignoreErrors << std::endl;
         std::cout << "  jobs = " << jobs << std::endl;
@@ -129,7 +138,6 @@ int main(int argc, char* argv[])
         output("quiet", quiet);
         std::cout << "  filename = " << filename << std::endl;
         std::cout << "  count = " << count << std::endl;
-        std::cout << std::endl;
         return 0;
     }
     catch (const std::exception& ex)

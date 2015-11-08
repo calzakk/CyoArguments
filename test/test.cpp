@@ -98,7 +98,7 @@ namespace
             std::copy(begin(args), end(args), std::back_inserter(fullArgs));
 
             std::string actualError;
-            bool actualResult = arguments.Process(fullArgs.size(), (char**)&fullArgs[0], actualError);
+            bool actualResult = arguments.Process((int)fullArgs.size(), (char**)&fullArgs[0], actualError);
 
             if (actualResult != expectedResult)
             {
