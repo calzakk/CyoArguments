@@ -17,8 +17,8 @@ Instantiate an Arguments object:
 
 Add any optional arguments:
 
-    bool ignoreErrors = false;
-    args.AddOption( "ignore-errors", "continue processing on error", ignoreErrors );
+    double scale = 1.0;
+    args.AddOption( "scale", "scaling factor", scale );
 
     bool verbose = false;
     args.AddOption( 'v', "verbose", "output additional info", verbose );
