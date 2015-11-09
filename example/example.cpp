@@ -107,10 +107,15 @@ int main(int argc, char* argv[])
         args.AddRequired("temp2", "description for temp2", temp2);
 #endif
 
-        args.Help();
-
+#if 1
+        if (!args.Process(argc, argv))
+            return 1;
+#else
         argc; argv; //TEMP
-
+        //const char* testargv[] = { "exe_pathname" };
+        //const char* testargv[] = { "exe_pathname", "/?" };
+        //const char* testargv[] = { "exe_pathname", "-?" };
+        //const char* testargv[] = { "exe_pathname", "--help" };
         //const char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-n=bah", "--block=five", "--suffix", "ine", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
         //const char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
         //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
@@ -122,6 +127,7 @@ int main(int argc, char* argv[])
         int testargc = (sizeof(testargv) / sizeof(testargv[0]));
         if (!args.Process(testargc, (char**)testargv))
             return 1;
+#endif
 
         std::cout << "RESULTS:" << std::endl;
         std::cout << "  all = " << all << std::endl;

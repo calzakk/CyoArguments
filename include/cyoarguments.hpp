@@ -41,10 +41,10 @@ SOFTWARE.
 #include "detail/make_unique.hpp"
 
 #ifdef _MSC_VER //case insensitivity only on Windows
-//#   define strcompare _stricmp
+#   define strcompare _stricmp
 #   define strncompare _strnicmp
 #else
-//#   define strcompare std::strcmp
+#   define strcompare std::strcmp
 #   define strncompare std::strncmp
 #endif
 
@@ -498,6 +498,8 @@ namespace cyoarguments
 
         Arguments() = default;
 
+        void DisableHelp() { helpEnabled_ = false; }
+
         void SetName(std::string name) { name_ = std::move(name); }
 
         void SetHeader(std::string header) { header_ = std::move(header); }
@@ -534,11 +536,6 @@ namespace cyoarguments
             required_.push_back(std::make_unique<detail::Required<T>>(name, description, target));
         }
 
-        void Help() const
-        {
-            HelpImpl();
-        }
-
         bool Process(int argc, char* argv[], std::string& error) const
         {
             return ProcessImpl(argc, argv, error);
@@ -549,13 +546,15 @@ namespace cyoarguments
             std::string error;
             if (ProcessImpl(argc, argv, error))
                 return true;
-            std::cerr << error << std::endl;
+            if (!error.empty())
+                std::cerr << error << std::endl;
             return false;
         }
 
     private:
         using OptionsList = std::list<detail::OptionPtr>;
 
+        bool helpEnabled_ = true;
         std::string name_;
         std::string header_;
         std::string footer_;
@@ -588,44 +587,32 @@ namespace cyoarguments
                 throw std::runtime_error("Name of required argument has insufficient length");
         }
 
-        void HelpImpl() const
-        {
-            if (!header_.empty())
-                std::cout << header_ << "\n\n";
-
-            std::cout << "Usage:";
-            if (!name_.empty())
-                std::cout << ' ' << name_;
-            if (!options_.empty())
-                std::cout << " [OPTION...]";
-            for (const auto& required : required_)
-                std::cout << ' ' << ((detail::RequiredBase*)required.get())->getName();
-            std::cout << "\n\n";
-
-            if (!required_.empty())
-            {
-                for (const auto& required : required_)
-                    required->Output();
-                std::cout << '\n';
-            }
-
-            if (!options_.empty())
-            {
-                std::cout << "Options:\n";
-                for (const auto& option : options_)
-                    option->Output();
-                std::cout << '\n';
-            }
-
-            if (!footer_.empty())
-                std::cout << footer_ << '\n';
-
-            std::cout << std::endl;
-        }
-
         bool ProcessImpl(int argc, char* argv[], std::string& error) const
         {
+            if (options_.empty() && required_.empty())
+                throw std::runtime_error("No optional or required arguments!");
+
             error.clear();
+
+            if (helpEnabled_)
+            {
+                for (int index = 1; index < argc; ++index)
+                {
+                    bool help = false;
+#ifdef _MSC_VER
+                    help = (strcompare(argv[index], "/?") == 0);
+#endif
+                    if (!help)
+                        help = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--help") == 0);
+                    if (help)
+                    {
+                        DisplayHelp();
+                        return false;
+                    }
+                }
+            }
+
+            // Process optional and required arguments...
 
             auto nextRequired = required_.begin();
 
@@ -661,6 +648,42 @@ namespace cyoarguments
             }
 
             return true;
+        }
+
+        void DisplayHelp() const
+        {
+            if (!header_.empty())
+                std::cout << header_ << "\n\n";
+
+            std::cout << "Usage:";
+            if (!name_.empty())
+                std::cout << ' ' << name_;
+            if (!options_.empty())
+                std::cout << " [OPTION...]";
+            for (const auto& required : required_)
+                std::cout << ' ' << ((detail::RequiredBase*)required.get())->getName();
+            std::cout << '\n';
+
+            if (!required_.empty())
+            {
+                std::cout << '\n';
+                for (const auto& required : required_)
+                    required->Output();
+            }
+
+            if (!options_.empty())
+            {
+                std::cout << "\nOptions:\n";
+                for (const auto& option : options_)
+                    option->Output();
+                //TODO: -?, --help
+                //TODO: --version
+            }
+
+            if (!footer_.empty())
+                std::cout << '\n' << footer_ << '\n';
+
+            std::cout << std::flush;
         }
 
         bool ProcessOptions(int argc, char* argv[], int& index) const
