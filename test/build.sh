@@ -1,1 +1,1 @@
-g++ test.cpp -o runtest -I../include --std=c++11
+g++ test.cpp -o runtest -I../include --std=c++14
