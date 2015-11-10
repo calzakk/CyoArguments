@@ -35,7 +35,7 @@ namespace cyoarguments
     {
         template<typename T> struct allowRequired : std::true_type { };
         template<> struct allowRequired<bool> : std::false_type { };
-        template<typename T> struct allowRequired<Argument<T>> : std::false_type { };
+        template<typename U> struct allowRequired<Argument<U>> : std::false_type { };
 
         template<typename T> struct valueless : std::false_type { };
         template<> struct valueless<bool> : std::true_type { };
