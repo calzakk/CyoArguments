@@ -37,6 +37,13 @@ using namespace cyoarguments;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define CHECK(value) \
+    if (!value) \
+    { \
+        std::cout << "\nline " << __LINE__ << ": value=" << value; \
+        throw std::runtime_error("Unexpected value"); \
+    }
+
 #define CHECK_EQUAL(expected, actual) \
     if (expected != actual) \
     { \
@@ -382,6 +389,229 @@ namespace
 
     ///////////////////////////////////////////////////////////////////////////
 
+    // Argument<bool>
+    namespace
+    {
+        // Letter
+        namespace
+        {
+            class LetterArgumentBoolBase : public Test
+            {
+            public:
+                LetterArgumentBoolBase()
+                {
+                    arguments.AddOption('a', "description", a);
+                    arguments.AddOption('b', "description", b);
+                }
+                Argument<bool> a;
+                Argument<bool> b;
+            };
+
+            TEST(LetterArgumentBool, 1, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a1" }, false, "Invalid argument: -a1");
+                CHECK(a() && a.get());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentBool, 2, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a=2" }, false, "Invalid argument: -a=2");
+                CHECK(!a());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentBool, 3, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a", "3" }, false, "Invalid argument: 3");
+                CHECK(a() && a.get());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentBool, 4, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a=", "4" }, false, "Invalid argument: -a=");
+                CHECK(!a());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentBool, 5, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a" }, true, "");
+                CHECK(a() && a.get());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentBool, 6, LetterArgumentBoolBase)
+            {
+                ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
+                CHECK(!a());
+                CHECK(!b());
+            }
+        }
+
+        // Letters
+        namespace
+        {
+            class LettersArgumentBoolBase : public Test
+            {
+            public:
+                LettersArgumentBoolBase()
+                {
+                    arguments.AddOption('x', "description", x);
+                    arguments.AddOption('y', "description", y);
+                }
+                Argument<bool> x;
+                Argument<bool> y;
+            };
+
+            TEST(LettersArgumentBool, 1, LettersArgumentBoolBase)
+            {
+                ProcessArgs({ "-x1y2" }, false, "Invalid argument: -x1y2");
+                CHECK(x() && x.get());
+                CHECK(!y());
+            }
+
+            TEST(LettersArgumentBool, 2, LettersArgumentBoolBase)
+            {
+                ProcessArgs({ "-x3", "-y4" }, false, "Invalid argument: -x3");
+                CHECK(x() && x.get());
+                CHECK(!y());
+            }
+
+            TEST(LettersArgumentBool, 3, LettersArgumentBoolBase)
+            {
+                ProcessArgs({ "-x", "5", "-y", "6" }, false, "Invalid argument: 5");
+                CHECK(x() && x.get());
+                CHECK(!y());
+            }
+
+            TEST(LettersArgumentBool, 4, LettersArgumentBoolBase)
+            {
+                ProcessArgs({ "-xy" }, true, "");
+                CHECK(x() && x.get());
+                CHECK(y() && y.get());
+            }
+        }
+
+        // Word
+        namespace
+        {
+            class WordArgumentBoolBase : public Test
+            {
+            public:
+                WordArgumentBoolBase()
+                {
+                    arguments.AddOption("num", "description", num);
+                }
+                Argument<bool> num;
+            };
+
+            TEST(WordArgumentBool, 1, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num1" }, false, "Invalid argument: --num1");
+                CHECK(!num());
+            }
+
+            TEST(WordArgumentBool, 2, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=2" }, false, "Invalid argument: --num=2");
+                CHECK(!num());
+            }
+
+            TEST(WordArgumentBool, 3, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num", "3" }, false, "Invalid argument: 3");
+                CHECK(num() && num.get());
+            }
+
+            TEST(WordArgumentBool, 4, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=", "4" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+            }
+
+            TEST(WordArgumentBool, 5, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num" }, true, "");
+                CHECK(num() && num.get());
+            }
+
+            TEST(WordArgumentBool, 6, WordArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+            }
+        }
+
+        // Words
+        namespace
+        {
+            class WordsArgumentBoolBase : public Test
+            {
+            public:
+                WordsArgumentBoolBase()
+                {
+                    arguments.AddOption("num", "description", num);
+                    arguments.AddOption("val", "description", val);
+                }
+                Argument<bool> num;
+                Argument<bool> val;
+            };
+
+            TEST(WordsArgumentBool, 1, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num1", "--val2" }, false, "Invalid argument: --num1");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentBool, 2, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=3", "--val=4" }, false, "Invalid argument: --num=3");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentBool, 3, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num", "5", "--val", "6" }, false, "Invalid argument: 5");
+                CHECK(num() && num.get());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentBool, 4, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=", "7", "--val=", "8" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentBool, 5, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num", "--val" }, true, "");
+                CHECK(num() && num.get());
+                CHECK(val() && val.get());
+            }
+
+            TEST(WordsArgumentBool, 6, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num=", "--val=" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentBool, 7, WordsArgumentBoolBase)
+            {
+                ProcessArgs({ "--num9val10" }, false, "Invalid argument: --num9val10");
+                CHECK(!num());
+                CHECK(!val());
+            }
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
     // int
     namespace
     {
@@ -641,6 +871,229 @@ namespace
 
     ///////////////////////////////////////////////////////////////////////////
 
+    // Argument<int>
+    namespace
+    {
+        // Letter
+        namespace
+        {
+            class LetterArgumentIntBase : public Test
+            {
+            public:
+                LetterArgumentIntBase()
+                {
+                    arguments.AddOption('a', "description", a);
+                    arguments.AddOption('b', "description", b);
+                }
+                Argument<int> a;
+                Argument<int> b;
+            };
+
+            TEST(LetterArgumentInt, 1, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a1" }, true, "");
+                CHECK(a() && a.get() == 1);
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentInt, 2, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a=2" }, true, "");
+                CHECK(a() && a.get() == 2);
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentInt, 3, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a", "3" }, true, "");
+                CHECK(a() && a.get() == 3);
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentInt, 4, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a=", "4" }, true, "");
+                CHECK(a() && a.get() == 5);
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentInt, 5, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a" }, false, "Invalid argument: -a");
+                CHECK(!a());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentInt, 6, LetterArgumentIntBase)
+            {
+                ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
+                CHECK(!a());
+                CHECK(!b());
+            }
+        }
+
+        // Letters
+        namespace
+        {
+            class LettersArgumentIntBase : public Test
+            {
+            public:
+                LettersArgumentIntBase()
+                {
+                    arguments.AddOption('x', "description", x);
+                    arguments.AddOption('y', "description", y);
+                }
+                Argument<int> x;
+                Argument<int> y;
+            };
+
+            TEST(LettersArgumentInt, 1, LettersArgumentIntBase)
+            {
+                ProcessArgs({ "-x1y2" }, true, "");
+                CHECK(x() && x.get() == 1);
+                CHECK(y() && y.get() == 2);
+            }
+
+            TEST(LettersArgumentInt, 2, LettersArgumentIntBase)
+            {
+                ProcessArgs({ "-x3", "-y4" }, true, "");
+                CHECK(x() && x.get() == 3);
+                CHECK(y() && y.get() == 4);
+            }
+
+            TEST(LettersArgumentInt, 3, LettersArgumentIntBase)
+            {
+                ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
+                CHECK(x() && x.get() == 5);
+                CHECK(y() && y.get() == 6);
+            }
+
+            TEST(LettersArgumentInt, 4, LettersArgumentIntBase)
+            {
+                ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
+                CHECK(!x());
+                CHECK(!y());
+            }
+        }
+
+        // Word
+        namespace
+        {
+            class WordArgumentIntBase : public Test
+            {
+            public:
+                WordArgumentIntBase()
+                {
+                    arguments.AddOption("num", "description", num);
+                }
+                Argument<int> num;
+            };
+
+            TEST(WordArgumentInt, 1, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num1" }, true, "");
+                CHECK(num() && num.get() == 1);
+            }
+
+            TEST(WordArgumentInt, 2, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num=2" }, true, "");
+                CHECK(num() && num.get() == 2);
+            }
+
+            TEST(WordArgumentInt, 3, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num", "3" }, true, "");
+                CHECK(num() && num.get() == 3);
+            }
+
+            TEST(WordArgumentInt, 4, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num=", "4" }, true, "");
+                CHECK(num() && num.get() == 4);
+            }
+
+            TEST(WordArgumentInt, 5, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num" }, false, "Invalid argument: --num");
+                CHECK(!num());
+            }
+
+            TEST(WordArgumentInt, 6, WordArgumentIntBase)
+            {
+                ProcessArgs({ "--num=" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+            }
+        }
+
+        // Words
+        namespace
+        {
+            class WordsArgumentIntBase : public Test
+            {
+            public:
+                WordsArgumentIntBase()
+                {
+                    arguments.AddOption("num", "description", num);
+                    arguments.AddOption("val", "description", val);
+                }
+                Argument<int> num;
+                Argument<int> val;
+            };
+
+            TEST(WordsArgumentInt, 1, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num1", "--val2" }, true, "");
+                CHECK(num() && num.get() == 1);
+                CHECK(val() && val.get() == 2);
+            }
+
+            TEST(WordsArgumentInt, 2, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num=3", "--val=4" }, true, "");
+                CHECK(num() && num.get() == 3);
+                CHECK(val() && val.get() == 4);
+            }
+
+            TEST(WordsArgumentInt, 3, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num", "5", "--val", "6" }, true, "");
+                CHECK(num() && num.get() == 5);
+                CHECK(val() && val.get() == 6);
+            }
+
+            TEST(WordsArgumentInt, 4, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num=", "7", "--val=", "8" }, true, "");
+                CHECK(num() && num.get() == 7);
+                CHECK(val() && val.get() == 8);
+            }
+
+            TEST(WordsArgumentInt, 5, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num", "--val" }, false, "Invalid argument: --num");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentInt, 6, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num=", "--val=" }, false, "Invalid argument: --num=");
+                CHECK(!num());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentInt, 7, WordsArgumentIntBase)
+            {
+                ProcessArgs({ "--num9val10" }, false, "Invalid argument: --num9val10");
+                CHECK(!num());
+                CHECK(!val());
+            }
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
     // std::string
     namespace
     {
@@ -894,6 +1347,229 @@ namespace
                 ProcessArgs({ "--name9val10" }, false, "Invalid argument: --name9val10");
                 CHECK_EQUAL("", name);
                 CHECK_EQUAL("", val);
+            }
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Argument<std::string>
+    namespace
+    {
+        // Letter
+        namespace
+        {
+            class LetterArgumentStringBase : public Test
+            {
+            public:
+                LetterArgumentStringBase()
+                {
+                    arguments.AddOption('a', "description", a);
+                    arguments.AddOption('b', "description", b);
+                }
+                Argument<std::string> a;
+                Argument<std::string> b;
+            };
+
+            TEST(LetterArgumentString, 1, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a1" }, false, "Invalid argument: -a1");
+                CHECK(!a());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentString, 2, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a=2" }, true, "");
+                CHECK(a() && a.get() == "2");
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentString, 3, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a", "3" }, true, "");
+                CHECK(a() && a.get() == "3");
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentString, 4, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a=", "4" }, true, "");
+                CHECK(a() && a.get() == "4");
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentString, 5, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a" }, false, "Invalid argument: -a");
+                CHECK(!a());
+                CHECK(!b());
+            }
+
+            TEST(LetterArgumentString, 6, LetterArgumentStringBase)
+            {
+                ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
+                CHECK(!a());
+                CHECK(!b());
+            }
+        }
+
+        // Letters
+        namespace
+        {
+            class LettersArgumentStringBase : public Test
+            {
+            public:
+                LettersArgumentStringBase()
+                {
+                    arguments.AddOption('x', "description", x);
+                    arguments.AddOption('y', "description", y);
+                }
+                Argument<std::string> x;
+                Argument<std::string> y;
+            };
+
+            TEST(LettersArgumentString, 1, LettersArgumentStringBase)
+            {
+                ProcessArgs({ "-x1y2" }, false, "Invalid argument: -x1y2");
+                CHECK(!x());
+                CHECK(!y());
+            }
+
+            TEST(LettersArgumentString, 2, LettersArgumentStringBase)
+            {
+                ProcessArgs({ "-x3", "-y4" }, false, "Invalid argument: -x3");
+                CHECK(!x());
+                CHECK(!y());
+            }
+
+            TEST(LettersArgumentString, 3, LettersArgumentStringBase)
+            {
+                ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
+                CHECK(x() && x.get() == "5");
+                CHECK(y() && y.get() == "6");
+            }
+
+            TEST(LettersArgumentString, 4, LettersArgumentStringBase)
+            {
+                ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
+                CHECK(!x());
+                CHECK(!y());
+            }
+        }
+
+        // Word
+        namespace
+        {
+            class WordArgumentStringBase : public Test
+            {
+            public:
+                WordArgumentStringBase()
+                {
+                    arguments.AddOption("val", "description", val);
+                }
+                Argument<std::string> val;
+            };
+
+            TEST(WordArgumentString, 1, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val1" }, false, "Invalid argument: --val1");
+                CHECK(!val());
+            }
+
+            TEST(WordArgumentString, 2, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val=2" }, true, "");
+                CHECK(val() && val.get() == "2");
+            }
+
+            TEST(WordArgumentString, 3, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val", "3" }, true, "");
+                CHECK(val() && val.get() == "3");
+            }
+
+            TEST(WordArgumentString, 4, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val=", "4" }, true, "");
+                CHECK(val() && val.get() == "4");
+            }
+
+            TEST(WordArgumentString, 5, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val" }, false, "Invalid argument: --val");
+                CHECK(!val());
+            }
+
+            TEST(WordArgumentString, 6, WordArgumentStringBase)
+            {
+                ProcessArgs({ "--val=" }, false, "Invalid argument: --val=");
+                CHECK(!val());
+            }
+        }
+
+        // Words
+        namespace
+        {
+            class WordsArgumentStringBase : public Test
+            {
+            public:
+                WordsArgumentStringBase()
+                {
+                    arguments.AddOption("name", "description", name);
+                    arguments.AddOption("val", "description", val);
+                }
+                Argument<std::string> name;
+                Argument<std::string> val;
+            };
+
+            TEST(WordsArgumentString, 1, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name1", "--val2" }, false, "Invalid argument: --name1");
+                CHECK(!name());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentString, 2, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name=3", "--val=4" }, true, "");
+                CHECK(name() && name.get() == "3");
+                CHECK(val() && val.get() == "4");
+            }
+
+            TEST(WordsArgumentString, 3, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name", "5", "--val", "6" }, true, "");
+                CHECK(name() && name.get() == "5");
+                CHECK(val() && val.get() == "6");
+            }
+
+            TEST(WordsArgumentString, 4, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name=", "7", "--val=", "8" }, true, "");
+                CHECK(name() && name.get() == "7");
+                CHECK(val() && val.get() == "8");
+            }
+
+            TEST(WordsArgumentString, 5, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name", "--val" }, false, "Invalid argument: --name");
+                CHECK(!name());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentString, 6, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name=", "--val=" }, false, "Invalid argument: --name=");
+                CHECK(!name());
+                CHECK(!val());
+            }
+
+            TEST(WordsArgumentString, 7, WordsArgumentStringBase)
+            {
+                ProcessArgs({ "--name9val10" }, false, "Invalid argument: --name9val10");
+                CHECK(!name());
+                CHECK(!val());
             }
         }
     }

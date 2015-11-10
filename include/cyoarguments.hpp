@@ -65,12 +65,11 @@ namespace cyoarguments
 
         bool operator()() const { return !blank_; }
         T get() const { return value_; }
-        void set(T value) { value_ = std::move(value); }
+        void set(T value) { blank_ = false; value_ = std::move(value); }
 
     protected:
         bool blank_ = true;
         T value_;
-        Argument(Argument& src, T&& value) { src.blank_ = false; src.value_ = value; }
     };
 }
 
