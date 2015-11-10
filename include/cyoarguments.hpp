@@ -61,12 +61,11 @@ namespace cyoarguments
     {
     public:
         Argument() = default;
-        Argument(const T& value) : value_(value) { }
+        explicit Argument(const T& value) : value_(value) { }
+
         bool operator()() const { return !blank_; }
         T get() const { return value_; }
-        void set(T value) {
-            value_ = std::move(value);
-        }
+        void set(T value) { value_ = std::move(value); }
 
     protected:
         bool blank_ = true;
@@ -95,12 +94,14 @@ namespace cyoarguments
 
         void SetName(std::string name) { name_ = std::move(name); }
 
+        void SetVersion(std::string version) { version_ = std::move(version); }
+
         void SetHeader(std::string header) { header_ = std::move(header); }
 
         void SetFooter(std::string footer) { footer_ = std::move(footer); }
 
         template<typename T>
-        void AddOption(char letter, const char* word, const char* description, T& target)
+        void AddOption(char letter, std::string word, std::string description, T& target)
         {
             VerifyLetter(letter);
             VerifyWord(word);
@@ -108,21 +109,21 @@ namespace cyoarguments
         }
 
         template<typename T>
-        void AddOption(char letter, const char* description, T& target)
+        void AddOption(char letter, std::string description, T& target)
         {
             VerifyLetter(letter);
-            options_.push_back(std::make_unique<detail::Option<T>>(letter, nullptr, description, target));
+            options_.push_back(std::make_unique<detail::Option<T>>(letter, description, target));
         }
 
         template<typename T>
-        void AddOption(const char* word, const char* description, T& target)
+        void AddOption(std::string word, std::string description, T& target)
         {
             VerifyWord(word);
             options_.push_back(std::make_unique<detail::Option<T>>('\0', word, description, target));
         }
 
         template<typename T>
-        void AddRequired(const char* name, const char* description, T& target)
+        void AddRequired(std::string name, std::string description, T& target)
         {
             static_assert(detail::allowRequired<T>::value, "Disallowed type of required argument");
             VerifyRequired(name);
@@ -146,64 +147,48 @@ namespace cyoarguments
 
     private:
         using OptionsList = std::list<detail::OptionPtr>;
+        using RequiredList = std::list<detail::RequiredPtr>;
 
         bool helpEnabled_ = true;
         std::string name_;
+        std::string version_;
         std::string header_;
         std::string footer_;
         OptionsList options_;
-        OptionsList required_;
+        RequiredList required_;
         bool allowEmpty_ = false;
 
         void VerifyLetter(char letter)
         {
             if (!std::isalnum(letter))
-                throw std::runtime_error(std::string("Option is not alphanumeric: ") + std::string(1, letter));
+                throw std::runtime_error(std::string("Option is not alphanumeric: ") + letter);
         }
 
-        void VerifyWord(const char* word)
+        void VerifyWord(const std::string& word)
         {
-            if (word == nullptr)
-                throw std::runtime_error("Option cannot be null");
-            auto wordLen = std::strlen(word);
-            if (wordLen < 2)
-                throw std::runtime_error(std::string("Option's length must be two or more characters: ") + word);
-            if (std::find_if(word, word + wordLen, [](char ch){ return !std::isalnum(ch); }) != word + wordLen)
+            if (word.empty())
+                throw std::runtime_error("Option cannot be blank");
+            if (std::find_if(word.begin(), word.end(), [](char ch){ return !std::isalnum(ch); }) != word.end())
                 throw std::runtime_error(std::string("Option contains a non-alphanumeric character: ") + word);
         }
 
-        void VerifyRequired(const char* name)
+        void VerifyRequired(const std::string& name)
         {
-            if (name == nullptr)
-                throw std::runtime_error("Name of required argument is null");
-            if (std::strlen(name) < 1)
-                throw std::runtime_error("Name of required argument has insufficient length");
+            if (name.empty())
+                throw std::runtime_error("Required argument must have a name");
         }
 
         bool ProcessImpl(int argc, char* argv[], std::string& error) const
         {
+            error.clear();
+
             if (options_.empty() && required_.empty())
                 throw std::runtime_error("No optional or required arguments!");
 
-            error.clear();
+            // Help or version?
 
-            if (helpEnabled_)
-            {
-                for (int index = 1; index < argc; ++index)
-                {
-                    bool help = false;
-#ifdef _MSC_VER
-                    help = (strcompare(argv[index], "/?") == 0);
-#endif
-                    if (!help)
-                        help = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--help") == 0);
-                    if (help)
-                    {
-                        DisplayHelp();
-                        return false;
-                    }
-                }
-            }
+            if ((helpEnabled_ || !version_.empty()) && FindHelpOrVersion(argc, argv))
+                return false;
 
             // Process optional and required arguments...
 
@@ -231,16 +216,51 @@ namespace cyoarguments
 
             if (nextRequired != required_.end())
             {
-                auto& req = *nextRequired;
-
-                detail::RequiredBase* pReq = (detail::RequiredBase*)req.get();
-
+                // One or more missing required arguments
                 error = "Missing argument: ";
-                error += pReq->getName();
+                error += (*nextRequired)->getName();
                 return false;
             }
 
             return true;
+        }
+
+        bool FindHelpOrVersion(int argc, char* argv[]) const
+        {
+            for (int index = 1; index < argc; ++index)
+            {
+                if (helpEnabled_)
+                {
+                    bool help = false;
+#ifdef _MSC_VER
+                    help = (strcompare(argv[index], "/?") == 0) || (strcompare(argv[index], "/help") == 0);
+#endif
+                    if (!help)
+                        help = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--help") == 0);
+                    if (help)
+                    {
+                        DisplayHelp();
+                        return true;
+                    }
+                }
+
+                if (!version_.empty())
+                {
+                    bool version = false;
+#ifdef _MSC_VER
+                    version = (strcompare(argv[index], "/?") == 0) || (strcompare(argv[index], "/version") == 0);
+#endif
+                    if (!version)
+                        version = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--version") == 0);
+                    if (version)
+                    {
+                        DisplayVersion();
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         void DisplayHelp() const
@@ -254,7 +274,7 @@ namespace cyoarguments
             if (!options_.empty())
                 std::cout << " [OPTION...]";
             for (const auto& required : required_)
-                std::cout << ' ' << ((detail::RequiredBase*)required.get())->getName();
+                std::cout << ' ' << required->getName();
             std::cout << '\n';
 
             if (!required_.empty())
@@ -269,14 +289,21 @@ namespace cyoarguments
                 std::cout << "\nOptions:\n";
                 for (const auto& option : options_)
                     option->Output();
-                //TODO: -?, --help
-                //TODO: --version
+                if (helpEnabled_)
+                    detail::OptionBase::OutputImpl('\0', "help", "display this help and exit", true);
+                if (!version_.empty())
+                    detail::OptionBase::OutputImpl('\0', "version", "output version information and exit", true);
             }
 
             if (!footer_.empty())
                 std::cout << '\n' << footer_ << '\n';
 
             std::cout << std::flush;
+        }
+
+        void DisplayVersion() const
+        {
+            std::cout << version_ << std::endl;
         }
 
         bool ProcessOptions(int argc, char* argv[], int& index) const
@@ -339,7 +366,7 @@ namespace cyoarguments
             return (argv[index][ch] == '\0'); //true if at end of arg
         }
 
-        bool ProcessRequired(int argc, char* argv[], int& index, OptionsList::const_iterator& it) const
+        bool ProcessRequired(int argc, char* argv[], int& index, RequiredList::const_iterator& it) const
         {
             if (it == required_.end())
                 return false;
@@ -350,15 +377,6 @@ namespace cyoarguments
             ++it;
             return true;
         }
-    };
-
-    class Version final
-    {
-    public:
-        static const char* Str() { return "0.1.0"; }
-        static int Major() { return 0; }
-        static int Minor() { return 1; }
-        static int Patch() { return 0; }
     };
 }
 

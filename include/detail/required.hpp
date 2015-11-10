@@ -33,22 +33,16 @@ namespace cyoarguments
 {
     namespace detail
     {
-        class RequiredBase : public OptionBase
+        class RequiredBase : public ArgumentBase
         {
         public:
-            RequiredBase(const char* name, const char* description)
-                : name_(name), description_(description)
-            {
-            }
+            RequiredBase() = default;
+            virtual ~RequiredBase() = default;
 
-            virtual ~RequiredBase() { }
-
-            const char* getName() const { return name_; }
-
-        protected:
-            const char* name_;
-            const char* description_;
+            virtual const std::string& getName() const = 0;
         };
+
+        using RequiredPtr = std::unique_ptr<RequiredBase>;
 
         ////////////////////////////////
 
@@ -56,15 +50,19 @@ namespace cyoarguments
         class Required final : public RequiredBase
         {
         public:
-            Required(const char* name, const char* description, T& target)
-                : RequiredBase(name, description), target_(&target)
+            Required(std::string name, std::string description, T& target)
+                : name_(std::move(name)),
+                description_(std::move(description)),
+                target_(&target)
             {
             }
+
+            const std::string& getName() const override { return name_; }
 
             void Output() const override
             {
                 std::cout << "  " << name_;
-                for (auto i = std::strlen(name_); i < optionWidth_; ++i)
+                for (auto i = name_.size(); i < optionWidth_; ++i)
                     std::cout << ' ';
                 std::cout << description_;
                 std::cout << '\n';
@@ -81,6 +79,8 @@ namespace cyoarguments
             }
 
         private:
+            const std::string name_;
+            const std::string description_;
             T* target_;
         };
     }

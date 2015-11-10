@@ -34,15 +34,18 @@ using namespace cyoarguments;
 
 namespace
 {
+    const char* indent = "  ";
+
+    template<typename T>
+    void output(const char* name, const T& value)
+    {
+        std::cout << indent << name << " = " << value << std::endl;
+    }
+
     template<typename T>
     void output(const char* name, const Argument<T>& value)
     {
-        std::cout << "  " << name << " = ";
-        if (value())
-            std::cout << value.get();
-        else
-            std::cout << "(blank)";
-        std::cout << std::endl;
+        std::cout << indent << name << " = " << (value() ? value.get() : "(blank)") << std::endl;
     }
 }
 
@@ -54,7 +57,9 @@ int main(int argc, char* argv[])
 
         args.SetName("example");
 
-        args.SetHeader(std::string("CyoArguments example, version ") + Version::Str());
+        args.SetVersion("Version 1.0.0");
+
+        args.SetHeader("CyoArguments example, version 1.0.0");
 
         args.SetFooter("See https://github.com/calzakk/CyoArguments");
 
@@ -130,20 +135,20 @@ int main(int argc, char* argv[])
 #endif
 
         std::cout << "RESULTS:" << std::endl;
-        std::cout << "  all = " << all << std::endl;
-        std::cout << "  ignoreErrors = " << ignoreErrors << std::endl;
-        std::cout << "  jobs = " << jobs << std::endl;
-        std::cout << "  threads = " << threads << std::endl;
+        output("all", all);
+        output("ignoreErrors", ignoreErrors);
+        output("jobs", jobs);
+        output("threads", threads);
         output("name", name);
-        std::cout << "  block = " << block << std::endl;
-        std::cout << "  ratio = " << ratio << std::endl;
-        std::cout << "  angle = " << angle << std::endl;
-        std::cout << "  prefix = " << prefix << std::endl;
-        std::cout << "  suffix = " << suffix << std::endl;
-        std::cout << "  verbose = " << verbose << std::endl;
+        output("block", block);
+        output("ratio", ratio);
+        output("angle", angle);
+        output("prefix", prefix);
+        output("suffix", suffix);
+        output("verbose", verbose);
         output("quiet", quiet);
-        std::cout << "  filename = " << filename << std::endl;
-        std::cout << "  count = " << count << std::endl;
+        output("filename", filename);
+        output("count", count);
         return 0;
     }
     catch (const std::exception& ex)

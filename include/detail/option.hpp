@@ -33,58 +33,45 @@ namespace cyoarguments
 {
     namespace detail
     {
-        template<typename T>
-        class Option final : public OptionBase
+        class OptionBase : public ArgumentBase
         {
         public:
-            Option(char letter, const char* word, const char* description, T& target)
-                : letter_(letter), word_(word), description_(description), target_(&target)
-            {
-            }
+            OptionBase() = default;
+            virtual ~OptionBase() = default;
 
-            Option(char letter, const char* description, T& target)
-                : letter_(letter), word_(nullptr), description_(description), target_(&target)
-            {
-            }
-
-            Option(const char* word, const char* description, T& target)
-                : letter_('\0'), word_(word), description_(description), target_(&target)
-            {
-            }
-
-            void Output() const override
+            static void OutputImpl(char letter, const char* word, const char* description, bool valueless)
             {
                 std::cout << "  ";
 
                 int len = 4;
 
 #ifdef _MSC_VER
-                if (letter_ != '\0')
-                    std::cout << '/' << letter_ << (word_ != nullptr ? ", " : "  ");
+                if (letter != '\0')
+                    std::cout << '/' << letter << (word != nullptr ? ", " : "  ");
                 else
                     std::cout << "    "; //4 spaces
 
-                if (word_ != nullptr)
+                if (word != nullptr)
                 {
-                    std::cout << '/' << word_;
-                    len += ((int)std::strlen(word_) + 1);
-                    if (!valueless_)
+                    std::cout << '/' << word;
+                    len += ((int)std::strlen(word) + 1);
+                    if (!valueless)
                     {
                         std::cout << "=X";
                         len += 2;
                     }
                 }
 #else
-                if (letter_ != '\0')
-                    std::cout << '-' << letter_ << (word_ != nullptr ? ", " : "  ");
+                if (letter != '\0')
+                    std::cout << '-' << letter << (word != nullptr ? ", " : "  ");
                 else
                     std::cout << "    "; //4 spaces
 
-                if (word_ != nullptr)
+                if (word != nullptr)
                 {
-                    std::cout << "--" << word_;
-                    len += ((int)std::strlen(word_) + 2);
-                    if (!valueless_)
+                    std::cout << "--" << word;
+                    len += ((int)std::strlen(word) + 2);
+                    if (!valueless)
                     {
                         std::cout << "=X";
                         len += 2;
@@ -95,19 +82,57 @@ namespace cyoarguments
                 for (int i = len; i < optionWidth_; ++i)
                     std::cout << ' ';
 
-                std::cout << description_;
+                std::cout << description;
                 std::cout << std::endl;
+            }
+        };
+
+        using OptionPtr = std::unique_ptr<OptionBase>;
+
+        ////////////////////////////////
+
+        template<typename T>
+        class Option final : public OptionBase
+        {
+        public:
+            Option(char letter, std::string word, std::string description, T& target)
+                : letter_(letter),
+                word_(std::move(word)),
+                description_(std::move(description)),
+                target_(&target)
+            {
+            }
+
+            Option(char letter, std::string description, T& target)
+                : letter_(letter),
+                word_(),
+                description_(std::move(description)),
+                target_(&target)
+            {
+            }
+
+            Option(std::string word, std::string description, T& target)
+                : letter_('\0'),
+                word_(std::move(word)),
+                description_(std::move(description)),
+                target_(&target)
+            {
+            }
+
+            void Output() const override
+            {
+                OutputImpl(letter_, word_.c_str(), description_.c_str(), valueless_);
             }
 
             bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
             {
                 error = false;
 
-                if (word && word_ != nullptr)
+                if (word && !word_.empty())
                 {
                     char* argStart = argv[index] + ch;
-                    int wordLen = (int)std::strlen(word_);
-                    if (strncompare(word_, argStart, wordLen) == 0)
+                    auto wordLen = word_.size();
+                    if (strncompare(word_.c_str(), argStart, wordLen) == 0)
                     {
                         if (argStart[wordLen] == '\0')
                         {
@@ -273,8 +298,8 @@ namespace cyoarguments
             const bool valueless_ = detail::valueless<T>::value;
             const bool requiresEquals_ = detail::requiresEquals<T>::value;
             char letter_;
-            const char* word_;
-            const char* description_;
+            const std::string word_;
+            const std::string description_;
             T* target_;
 
             bool Matches(char ch1, char ch2) const

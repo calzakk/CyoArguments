@@ -33,19 +33,17 @@ namespace cyoarguments
 {
     namespace detail
     {
-        class OptionBase
+        class ArgumentBase
         {
         public:
-            virtual ~OptionBase() { }
+            virtual ~ArgumentBase() { }
 
             virtual void Output() const = 0;
             virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const = 0;
 
         protected:
-            static const int optionWidth_ = 20;
+            static const std::size_t optionWidth_ = 20;
         };
-
-        using OptionPtr = std::unique_ptr<OptionBase>;
     }
 }
 
