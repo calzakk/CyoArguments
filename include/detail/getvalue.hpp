@@ -38,7 +38,11 @@ namespace cyoarguments
         {
             UNREFERENCED_PARAMETER(arg);
             UNREFERENCED_PARAMETER(target);
+#ifdef _MSC_VER
             static_assert(false, "Unsupported argument type");
+#else
+            throw std::logic_error("Unsupported argument type");
+#endif
         }
 
         template<>
