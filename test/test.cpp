@@ -37,7 +37,7 @@ using namespace cyoarguments;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CHECK(expected, actual) \
+#define CHECK_EQUAL(expected, actual) \
     if (expected != actual) \
     { \
         std::cout << "\nline " << __LINE__ << ": value=" << actual << " expected=" << expected; \
@@ -180,43 +180,43 @@ namespace
             TEST(LetterBool, 1, LetterBoolBase)
             {
                 ProcessArgs({ "-a1" }, false, "Invalid argument: -a1");
-                CHECK(true, a);
-                CHECK(false, b);
+                CHECK_EQUAL(true, a);
+                CHECK_EQUAL(false, b);
             }
 
             TEST(LetterBool, 2, LetterBoolBase)
             {
                 ProcessArgs({ "-a=2" }, false, "Invalid argument: -a=2");
-                CHECK(false, a);
-                CHECK(false, b);
+                CHECK_EQUAL(false, a);
+                CHECK_EQUAL(false, b);
             }
 
             TEST(LetterBool, 3, LetterBoolBase)
             {
                 ProcessArgs({ "-a", "3" }, false, "Invalid argument: 3");
-                CHECK(true, a);
-                CHECK(false, b);
+                CHECK_EQUAL(true, a);
+                CHECK_EQUAL(false, b);
             }
 
             TEST(LetterBool, 4, LetterBoolBase)
             {
                 ProcessArgs({ "-a=", "4" }, false, "Invalid argument: -a=");
-                CHECK(false, a);
-                CHECK(false, b);
+                CHECK_EQUAL(false, a);
+                CHECK_EQUAL(false, b);
             }
 
             TEST(LetterBool, 5, LetterBoolBase)
             {
                 ProcessArgs({ "-a" }, true, "");
-                CHECK(true, a);
-                CHECK(false, b);
+                CHECK_EQUAL(true, a);
+                CHECK_EQUAL(false, b);
             }
 
             TEST(LetterBool, 6, LetterBoolBase)
             {
                 ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
-                CHECK(false, a);
-                CHECK(false, b);
+                CHECK_EQUAL(false, a);
+                CHECK_EQUAL(false, b);
             }
         }
 
@@ -238,29 +238,29 @@ namespace
             TEST(LettersBool, 1, LettersBoolBase)
             {
                 ProcessArgs({ "-x1y2" }, false, "Invalid argument: -x1y2");
-                CHECK(true, x);
-                CHECK(false, y);
+                CHECK_EQUAL(true, x);
+                CHECK_EQUAL(false, y);
             }
 
             TEST(LettersBool, 2, LettersBoolBase)
             {
                 ProcessArgs({ "-x3", "-y4" }, false, "Invalid argument: -x3");
-                CHECK(true, x);
-                CHECK(false, y);
+                CHECK_EQUAL(true, x);
+                CHECK_EQUAL(false, y);
             }
 
             TEST(LettersBool, 3, LettersBoolBase)
             {
                 ProcessArgs({ "-x", "5", "-y", "6" }, false, "Invalid argument: 5");
-                CHECK(true, x);
-                CHECK(false, y);
+                CHECK_EQUAL(true, x);
+                CHECK_EQUAL(false, y);
             }
 
             TEST(LettersBool, 4, LettersBoolBase)
             {
                 ProcessArgs({ "-xy" }, true, "");
-                CHECK(true, x);
-                CHECK(true, y);
+                CHECK_EQUAL(true, x);
+                CHECK_EQUAL(true, y);
             }
         }
 
@@ -280,37 +280,37 @@ namespace
             TEST(WordBool, 1, WordBoolBase)
             {
                 ProcessArgs({ "--num1" }, false, "Invalid argument: --num1");
-                CHECK(false, num);
+                CHECK_EQUAL(false, num);
             }
 
             TEST(WordBool, 2, WordBoolBase)
             {
                 ProcessArgs({ "--num=2" }, false, "Invalid argument: --num=2");
-                CHECK(false, num);
+                CHECK_EQUAL(false, num);
             }
 
             TEST(WordBool, 3, WordBoolBase)
             {
                 ProcessArgs({ "--num", "3" }, false, "Invalid argument: 3");
-                CHECK(true, num);
+                CHECK_EQUAL(true, num);
             }
 
             TEST(WordBool, 4, WordBoolBase)
             {
                 ProcessArgs({ "--num=", "4" }, false, "Invalid argument: --num=");
-                CHECK(false, num);
+                CHECK_EQUAL(false, num);
             }
 
             TEST(WordBool, 5, WordBoolBase)
             {
                 ProcessArgs({ "--num" }, true, "");
-                CHECK(true, num);
+                CHECK_EQUAL(true, num);
             }
 
             TEST(WordBool, 6, WordBoolBase)
             {
                 ProcessArgs({ "--num=" }, false, "Invalid argument: --num=");
-                CHECK(false, num);
+                CHECK_EQUAL(false, num);
             }
         }
 
@@ -332,50 +332,50 @@ namespace
             TEST(WordsBool, 1, WordsBoolBase)
             {
                 ProcessArgs({ "--num1", "--val2" }, false, "Invalid argument: --num1");
-                CHECK(false, num);
-                CHECK(false, val);
+                CHECK_EQUAL(false, num);
+                CHECK_EQUAL(false, val);
             }
 
             TEST(WordsBool, 2, WordsBoolBase)
             {
                 ProcessArgs({ "--num=3", "--val=4" }, false, "Invalid argument: --num=3");
-                CHECK(false, num);
-                CHECK(false, val);
+                CHECK_EQUAL(false, num);
+                CHECK_EQUAL(false, val);
             }
 
             TEST(WordsBool, 3, WordsBoolBase)
             {
                 ProcessArgs({ "--num", "5", "--val", "6" }, false, "Invalid argument: 5");
-                CHECK(true, num);
-                CHECK(false, val);
+                CHECK_EQUAL(true, num);
+                CHECK_EQUAL(false, val);
             }
 
             TEST(WordsBool, 4, WordsBoolBase)
             {
                 ProcessArgs({ "--num=", "7", "--val=", "8" }, false, "Invalid argument: --num=");
-                CHECK(false, num);
-                CHECK(false, val);
+                CHECK_EQUAL(false, num);
+                CHECK_EQUAL(false, val);
             }
 
             TEST(WordsBool, 5, WordsBoolBase)
             {
                 ProcessArgs({ "--num", "--val" }, true, "");
-                CHECK(true, num);
-                CHECK(true, val);
+                CHECK_EQUAL(true, num);
+                CHECK_EQUAL(true, val);
             }
 
             TEST(WordsBool, 6, WordsBoolBase)
             {
                 ProcessArgs({ "--num=", "--val=" }, false, "Invalid argument: --num=");
-                CHECK(false, num);
-                CHECK(false, val);
+                CHECK_EQUAL(false, num);
+                CHECK_EQUAL(false, val);
             }
 
             TEST(WordsBool, 7, WordsBoolBase)
             {
                 ProcessArgs({ "--num9val10" }, false, "Invalid argument: --num9val10");
-                CHECK(false, num);
-                CHECK(false, val);
+                CHECK_EQUAL(false, num);
+                CHECK_EQUAL(false, val);
             }
         }
     }
@@ -439,43 +439,43 @@ namespace
             TEST(LetterInt, 1, LetterIntBase)
             {
                 ProcessArgs({ "-a1" }, true, "");
-                CHECK(1, a);
-                CHECK(0, b);
+                CHECK_EQUAL(1, a);
+                CHECK_EQUAL(0, b);
             }
 
             TEST(LetterInt, 2, LetterIntBase)
             {
                 ProcessArgs({ "-a=2" }, true, "");
-                CHECK(2, a);
-                CHECK(0, b);
+                CHECK_EQUAL(2, a);
+                CHECK_EQUAL(0, b);
             }
 
             TEST(LetterInt, 3, LetterIntBase)
             {
                 ProcessArgs({ "-a", "3" }, true, "");
-                CHECK(3, a);
-                CHECK(0, b);
+                CHECK_EQUAL(3, a);
+                CHECK_EQUAL(0, b);
             }
 
             TEST(LetterInt, 4, LetterIntBase)
             {
                 ProcessArgs({ "-a=", "4" }, true, "");
-                CHECK(4, a);
-                CHECK(0, b);
+                CHECK_EQUAL(4, a);
+                CHECK_EQUAL(0, b);
             }
 
             TEST(LetterInt, 5, LetterIntBase)
             {
                 ProcessArgs({ "-a" }, false, "Invalid argument: -a");
-                CHECK(0, a);
-                CHECK(0, b);
+                CHECK_EQUAL(0, a);
+                CHECK_EQUAL(0, b);
             }
 
             TEST(LetterInt, 6, LetterIntBase)
             {
                 ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
-                CHECK(0, a);
-                CHECK(0, b);
+                CHECK_EQUAL(0, a);
+                CHECK_EQUAL(0, b);
             }
         }
 
@@ -497,29 +497,29 @@ namespace
             TEST(LettersInt, 1, LettersIntBase)
             {
                 ProcessArgs({ "-x1y2" }, true, "");
-                CHECK(1, x);
-                CHECK(2, y);
+                CHECK_EQUAL(1, x);
+                CHECK_EQUAL(2, y);
             }
 
             TEST(LettersInt, 2, LettersIntBase)
             {
                 ProcessArgs({ "-x3", "-y4" }, true, "");
-                CHECK(3, x);
-                CHECK(4, y);
+                CHECK_EQUAL(3, x);
+                CHECK_EQUAL(4, y);
             }
 
             TEST(LettersInt, 3, LettersIntBase)
             {
                 ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
-                CHECK(5, x);
-                CHECK(6, y);
+                CHECK_EQUAL(5, x);
+                CHECK_EQUAL(6, y);
             }
 
             TEST(LettersInt, 4, LettersIntBase)
             {
                 ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
-                CHECK(0, x);
-                CHECK(0, y);
+                CHECK_EQUAL(0, x);
+                CHECK_EQUAL(0, y);
             }
         }
 
@@ -539,37 +539,37 @@ namespace
             TEST(WordInt, 1, WordIntBase)
             {
                 ProcessArgs({ "--num1" }, true, "");
-                CHECK(1, num);
+                CHECK_EQUAL(1, num);
             }
 
             TEST(WordInt, 2, WordIntBase)
             {
                 ProcessArgs({ "--num=2" }, true, "");
-                CHECK(2, num);
+                CHECK_EQUAL(2, num);
             }
 
             TEST(WordInt, 3, WordIntBase)
             {
                 ProcessArgs({ "--num", "3" }, true, "");
-                CHECK(3, num);
+                CHECK_EQUAL(3, num);
             }
 
             TEST(WordInt, 4, WordIntBase)
             {
                 ProcessArgs({ "--num=", "4" }, true, "");
-                CHECK(4, num);
+                CHECK_EQUAL(4, num);
             }
 
             TEST(WordInt, 5, WordIntBase)
             {
                 ProcessArgs({ "--num" }, false, "Invalid argument: --num");
-                CHECK(0, num);
+                CHECK_EQUAL(0, num);
             }
 
             TEST(WordInt, 6, WordIntBase)
             {
                 ProcessArgs({ "--num=" }, false, "Invalid argument: --num=");
-                CHECK(0, num);
+                CHECK_EQUAL(0, num);
             }
         }
 
@@ -591,50 +591,50 @@ namespace
             TEST(WordsInt, 1, WordsIntBase)
             {
                 ProcessArgs({ "--num1", "--val2" }, true, "");
-                CHECK(1, num);
-                CHECK(2, val);
+                CHECK_EQUAL(1, num);
+                CHECK_EQUAL(2, val);
             }
 
             TEST(WordsInt, 2, WordsIntBase)
             {
                 ProcessArgs({ "--num=3", "--val=4" }, true, "");
-                CHECK(3, num);
-                CHECK(4, val);
+                CHECK_EQUAL(3, num);
+                CHECK_EQUAL(4, val);
             }
 
             TEST(WordsInt, 3, WordsIntBase)
             {
                 ProcessArgs({ "--num", "5", "--val", "6" }, true, "");
-                CHECK(5, num);
-                CHECK(6, val);
+                CHECK_EQUAL(5, num);
+                CHECK_EQUAL(6, val);
             }
 
             TEST(WordsInt, 4, WordsIntBase)
             {
                 ProcessArgs({ "--num=", "7", "--val=", "8" }, true, "");
-                CHECK(7, num);
-                CHECK(8, val);
+                CHECK_EQUAL(7, num);
+                CHECK_EQUAL(8, val);
             }
 
             TEST(WordsInt, 5, WordsIntBase)
             {
                 ProcessArgs({ "--num", "--val" }, false, "Invalid argument: --num");
-                CHECK(0, num);
-                CHECK(0, val);
+                CHECK_EQUAL(0, num);
+                CHECK_EQUAL(0, val);
             }
 
             TEST(WordsInt, 6, WordsIntBase)
             {
                 ProcessArgs({ "--num=", "--val=" }, false, "Invalid argument: --num=");
-                CHECK(0, num);
-                CHECK(0, val);
+                CHECK_EQUAL(0, num);
+                CHECK_EQUAL(0, val);
             }
 
             TEST(WordsInt, 7, WordsIntBase)
             {
                 ProcessArgs({ "--num9val10" }, false, "Invalid argument: --num9val10");
-                CHECK(0, num);
-                CHECK(0, val);
+                CHECK_EQUAL(0, num);
+                CHECK_EQUAL(0, val);
             }
         }
     }
@@ -698,43 +698,43 @@ namespace
             TEST(LetterString, 1, LetterStringBase)
             {
                 ProcessArgs({ "-a1" }, false, "Invalid argument: -a1");
-                CHECK("", a);
-                CHECK("", b);
+                CHECK_EQUAL("", a);
+                CHECK_EQUAL("", b);
             }
 
             TEST(LetterString, 2, LetterStringBase)
             {
                 ProcessArgs({ "-a=2" }, true, "");
-                CHECK("2", a);
-                CHECK("", b);
+                CHECK_EQUAL("2", a);
+                CHECK_EQUAL("", b);
             }
 
             TEST(LetterString, 3, LetterStringBase)
             {
                 ProcessArgs({ "-a", "3" }, true, "");
-                CHECK("3", a);
-                CHECK("", b);
+                CHECK_EQUAL("3", a);
+                CHECK_EQUAL("", b);
             }
 
             TEST(LetterString, 4, LetterStringBase)
             {
                 ProcessArgs({ "-a=", "4" }, true, "");
-                CHECK("4", a);
-                CHECK("", b);
+                CHECK_EQUAL("4", a);
+                CHECK_EQUAL("", b);
             }
 
             TEST(LetterString, 5, LetterStringBase)
             {
                 ProcessArgs({ "-a" }, false, "Invalid argument: -a");
-                CHECK("", a);
-                CHECK("", b);
+                CHECK_EQUAL("", a);
+                CHECK_EQUAL("", b);
             }
 
             TEST(LetterString, 6, LetterStringBase)
             {
                 ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
-                CHECK("", a);
-                CHECK("", b);
+                CHECK_EQUAL("", a);
+                CHECK_EQUAL("", b);
             }
         }
 
@@ -756,29 +756,29 @@ namespace
             TEST(LettersString, 1, LettersStringBase)
             {
                 ProcessArgs({ "-x1y2" }, false, "Invalid argument: -x1y2");
-                CHECK("", x);
-                CHECK("", y);
+                CHECK_EQUAL("", x);
+                CHECK_EQUAL("", y);
             }
 
             TEST(LettersString, 2, LettersStringBase)
             {
                 ProcessArgs({ "-x3", "-y4" }, false, "Invalid argument: -x3");
-                CHECK("", x);
-                CHECK("", y);
+                CHECK_EQUAL("", x);
+                CHECK_EQUAL("", y);
             }
 
             TEST(LettersString, 3, LettersStringBase)
             {
                 ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
-                CHECK("5", x);
-                CHECK("6", y);
+                CHECK_EQUAL("5", x);
+                CHECK_EQUAL("6", y);
             }
 
             TEST(LettersString, 4, LettersStringBase)
             {
                 ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
-                CHECK("", x);
-                CHECK("", y);
+                CHECK_EQUAL("", x);
+                CHECK_EQUAL("", y);
             }
         }
 
@@ -798,37 +798,37 @@ namespace
             TEST(WordString, 1, WordStringBase)
             {
                 ProcessArgs({ "--val1" }, false, "Invalid argument: --val1");
-                CHECK("", val);
+                CHECK_EQUAL("", val);
             }
 
             TEST(WordString, 2, WordStringBase)
             {
                 ProcessArgs({ "--val=2" }, true, "");
-                CHECK("2", val);
+                CHECK_EQUAL("2", val);
             }
 
             TEST(WordString, 3, WordStringBase)
             {
                 ProcessArgs({ "--val", "3" }, true, "");
-                CHECK("3", val);
+                CHECK_EQUAL("3", val);
             }
 
             TEST(WordString, 4, WordStringBase)
             {
                 ProcessArgs({ "--val=", "4" }, true, "");
-                CHECK("4", val);
+                CHECK_EQUAL("4", val);
             }
 
             TEST(WordString, 5, WordStringBase)
             {
                 ProcessArgs({ "--val" }, false, "Invalid argument: --val");
-                CHECK("", val);
+                CHECK_EQUAL("", val);
             }
 
             TEST(WordString, 6, WordStringBase)
             {
                 ProcessArgs({ "--val=" }, false, "Invalid argument: --val=");
-                CHECK("", val);
+                CHECK_EQUAL("", val);
             }
         }
 
@@ -850,50 +850,50 @@ namespace
             TEST(WordsString, 1, WordsStringBase)
             {
                 ProcessArgs({ "--name1", "--val2" }, false, "Invalid argument: --name1");
-                CHECK("", name);
-                CHECK("", val);
+                CHECK_EQUAL("", name);
+                CHECK_EQUAL("", val);
             }
 
             TEST(WordsString, 2, WordsStringBase)
             {
                 ProcessArgs({ "--name=3", "--val=4" }, true, "");
-                CHECK("3", name);
-                CHECK("4", val);
+                CHECK_EQUAL("3", name);
+                CHECK_EQUAL("4", val);
             }
 
             TEST(WordsString, 3, WordsStringBase)
             {
                 ProcessArgs({ "--name", "5", "--val", "6" }, true, "");
-                CHECK("5", name);
-                CHECK("6", val);
+                CHECK_EQUAL("5", name);
+                CHECK_EQUAL("6", val);
             }
 
             TEST(WordsString, 4, WordsStringBase)
             {
                 ProcessArgs({ "--name=", "7", "--val=", "8" }, true, "");
-                CHECK("7", name);
-                CHECK("8", val);
+                CHECK_EQUAL("7", name);
+                CHECK_EQUAL("8", val);
             }
 
             TEST(WordsString, 5, WordsStringBase)
             {
                 ProcessArgs({ "--name", "--val" }, false, "Invalid argument: --name");
-                CHECK("", name);
-                CHECK("", val);
+                CHECK_EQUAL("", name);
+                CHECK_EQUAL("", val);
             }
 
             TEST(WordsString, 6, WordsStringBase)
             {
                 ProcessArgs({ "--name=", "--val=" }, false, "Invalid argument: --name=");
-                CHECK("", name);
-                CHECK("", val);
+                CHECK_EQUAL("", name);
+                CHECK_EQUAL("", val);
             }
 
             TEST(WordsString, 7, WordsStringBase)
             {
                 ProcessArgs({ "--name9val10" }, false, "Invalid argument: --name9val10");
-                CHECK("", name);
-                CHECK("", val);
+                CHECK_EQUAL("", name);
+                CHECK_EQUAL("", val);
             }
         }
     }
