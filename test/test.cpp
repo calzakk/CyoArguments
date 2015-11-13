@@ -633,21 +633,50 @@ namespace
             TEST(RequiredInt, 1, RequiredIntBase)
             {
                 ProcessArgs({}, false, "Missing argument: first");
+                CHECK_EQUAL(0, first);
+                CHECK_EQUAL(0, second);
             }
 
             TEST(RequiredInt, 2, RequiredIntBase)
             {
                 ProcessArgs({ "123" }, false, "Missing argument: second");
+                CHECK_EQUAL(123, first);
+                CHECK_EQUAL(0, second);
             }
 
             TEST(RequiredInt, 3, RequiredIntBase)
             {
                 ProcessArgs({ "123", "456" }, true, "");
+                CHECK_EQUAL(123, first);
+                CHECK_EQUAL(456, second);
             }
 
             TEST(RequiredInt, 4, RequiredIntBase)
             {
                 ProcessArgs({ "123", "456", "789" }, false, "Invalid argument: 789");
+                CHECK_EQUAL(123, first);
+                CHECK_EQUAL(456, second);
+            }
+
+            TEST(RequiredInt, 5, RequiredIntBase)
+            {
+                ProcessArgs({ "NotAnInteger" }, false, "Invalid argument: NotAnInteger");
+                CHECK_EQUAL(0, first);
+                CHECK_EQUAL(0, second);
+            }
+
+            TEST(RequiredInt, 6, RequiredIntBase)
+            {
+                ProcessArgs({ "123", "NotAnInteger" }, false, "Invalid argument: NotAnInteger");
+                CHECK_EQUAL(123, first);
+                CHECK_EQUAL(0, second);
+            }
+
+            TEST(RequiredInt, 7, RequiredIntBase)
+            {
+                ProcessArgs({ "123", "456BadInteger" }, false, "Invalid argument: 456BadInteger");
+                CHECK_EQUAL(123, first);
+                CHECK_EQUAL(0, second);
             }
         }
 
@@ -1115,21 +1144,29 @@ namespace
             TEST(RequiredString, 1, RequiredStringBase)
             {
                 ProcessArgs({}, false, "Missing argument: first");
+                CHECK_EQUAL("", first);
+                CHECK_EQUAL("", second);
             }
 
             TEST(RequiredString, 2, RequiredStringBase)
             {
                 ProcessArgs({ "alpha" }, false, "Missing argument: second");
+                CHECK_EQUAL("alpha", first);
+                CHECK_EQUAL("", second);
             }
 
             TEST(RequiredString, 3, RequiredStringBase)
             {
                 ProcessArgs({ "alpha", "beta" }, true, "");
+                CHECK_EQUAL("alpha", first);
+                CHECK_EQUAL("beta", second);
             }
 
             TEST(RequiredString, 4, RequiredStringBase)
             {
                 ProcessArgs({ "alpha", "beta", "gamma" }, false, "Invalid argument: gamma");
+                CHECK_EQUAL("alpha", first);
+                CHECK_EQUAL("beta", second);
             }
         }
 
