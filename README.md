@@ -8,8 +8,8 @@ From the outset the intention was an easy-to-use library, developed using modern
 
 * Easy to use;
 * Allows optional and/or required arguments;
-* Supports dash (-h) and double-dash (--help) arguments on all platforms;
-* Also supports slash-type (/?) arguments on Windows;
+* Supports dash (-v) and double-dash (--verbose) arguments on all platforms;
+* Also supports case-insensitive slash (/v) arguments on Windows;
 * Ability to add version information;
 * Easily extensible to support additional data types;
 * Implemented using header files only;
@@ -28,7 +28,13 @@ Instantiate an Arguments object:
 
     Arguments args;
 
-Add any optional arguments:
+Set the program's name (optional, only for displaying in the help):
+
+    args.SetName("example"); 
+
+Arguments come in three types: optional, required, and list. There must be at least one optional argument, one required argument, or one list argument.
+
+Add any **optional arguments**:
 
     double scale = 1.0;
     args.AddOption( "scale", "scaling factor", scale );
@@ -36,7 +42,7 @@ Add any optional arguments:
     bool verbose = false;
     args.AddOption( 'v', "verbose", "output additional info", verbose );
 
-Add any required arguments:
+Add any **required arguments**:
 
     std::string filename;
     args.AddRequired( "filename", "the file to process", filename );
@@ -44,7 +50,14 @@ Add any required arguments:
     int threads = 0;
     args.AddRequired( "threads", "number of threads to use", threads );
 
-Required arguments cannot be omitted when the program is executed, and must be specified in the order they were added to the object. Note that there must be at least one optional argument or at least one required argument.
+Required arguments cannot be omitted when the program is executed, and must be specified in the order they were added to the object.
+
+Add any **list argument**:
+
+    std::list<std::int> numbers;
+    args.AddList( "number", "initialization numbers", numbers );
+
+A list follows the required arguments, and is entirely optional. Multiple lists are not permitted. 
 
 Pass the command-line options to the object:
 
@@ -71,18 +84,36 @@ After calling args.Process(), the object can be queried:
 	}
 	//else --opt wasn't used on the command line
 
+## Help
+
+By using an argument of /? (Windows only) or -? or --help (all platforms) the above options will produce this output:
+
+    Usage: example [OPTION...] filename threads number...
+    
+      filename            the file to process
+      threads             number of threads to use
+      number...           initialization numbers
+    
+    Options:
+          --scale         scaling factor
+      -v, --verbose       output additional info
+
+(Note that /scale, /v, and /verbose will be output on Windows.)
+
+Help is enabled by default, but can be disabled with:
+
+    args.DisableHelp();
+
 ## Tests
 
 CyoArguments comes with a test suite to help verify the correctness of the library. Simply build with ./build.sh on Linux, or compile with Visual Studio on Windows.
 
 ## Platforms
 
-CyoArguments is known to build on the following platforms:
+CyoArguments requires a C++14 compiler, and is known to build on the following platforms:
 
 * Linux using GCC 4.9;
 * Windows using Visual Studio 2013.
-
-A C++14 compiler is required.
 
 ## License
 
