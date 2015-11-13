@@ -1610,6 +1610,311 @@ namespace
             }
         }
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    // std::vector<std::string>
+    namespace
+    {
+        // Letter
+        namespace
+        {
+            class LetterStringVectorBase : public Test
+            {
+            public:
+                LetterStringVectorBase()
+                {
+                    arguments.AddOption('a', "description", a);
+                }
+                std::vector<std::string> a;
+            };
+
+            TEST(LetterStringVector, 1, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a1" }, false, "Invalid argument: -a1");
+                CHECK_EQUAL(0u, a.size());
+            }
+
+            TEST(LetterStringVector, 2, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a=2" }, true, "");
+                CHECK_EQUAL(1, a.size());
+                CHECK_EQUAL("2", a[0]);
+            }
+
+            TEST(LetterStringVector, 3, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a", "3" }, true, "");
+                CHECK_EQUAL(1, a.size());
+                CHECK_EQUAL("3", a[0]);
+            }
+
+            TEST(LetterStringVector, 4, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a=", "4" }, true, "");
+                CHECK_EQUAL(1, a.size());
+                CHECK_EQUAL("4", a[0]);
+            }
+
+            TEST(LetterStringVector, 5, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a" }, false, "Invalid argument: -a");
+                CHECK_EQUAL(0, a.size());
+            }
+
+            TEST(LetterStringVector, 6, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a=" }, false, "Invalid argument: -a=");
+                CHECK_EQUAL(0, a.size());
+            }
+
+            TEST(LetterStringVector, 7, LetterStringVectorBase)
+            {
+                ProcessArgs({ "-a=1", "-a=2" }, true, "");
+                CHECK_EQUAL(2, a.size());
+                CHECK_EQUAL("1", a[0]);
+                CHECK_EQUAL("2", a[1]);
+            }
+        }
+
+        // Letters
+        namespace
+        {
+            class LettersStringVectorBase : public Test
+            {
+            public:
+                LettersStringVectorBase()
+                {
+                    arguments.AddOption('x', "description", x);
+                    arguments.AddOption('y', "description", y);
+                }
+                std::vector<std::string> x;
+                std::vector<std::string> y;
+            };
+
+            TEST(LettersStringVector, 1, LettersStringVectorBase)
+            {
+                ProcessArgs({ "-x1y2" }, false, "Invalid argument: -x1y2");
+                CHECK_EQUAL(0, x.size());
+                CHECK_EQUAL(0, y.size());
+            }
+
+            TEST(LettersStringVector, 2, LettersStringVectorBase)
+            {
+                ProcessArgs({ "-x3", "-y4" }, false, "Invalid argument: -x3");
+                CHECK_EQUAL(0, x.size());
+                CHECK_EQUAL(0, y.size());
+            }
+
+            TEST(LettersStringVector, 3, LettersStringVectorBase)
+            {
+                ProcessArgs({ "-x", "5", "-y", "6" }, true, "");
+                CHECK_EQUAL(1, x.size());
+                CHECK_EQUAL("5", x[0]);
+                CHECK_EQUAL(1, y.size());
+                CHECK_EQUAL("6", y[0]);
+            }
+
+            TEST(LettersStringVector, 4, LettersStringVectorBase)
+            {
+                ProcessArgs({ "-xy" }, false, "Invalid argument: -xy");
+                CHECK_EQUAL(0, x.size());
+                CHECK_EQUAL(0, y.size());
+            }
+
+            TEST(LettersStringVector, 5, LettersStringVectorBase)
+            {
+                ProcessArgs({ "-x", "1", "-y", "2", "-x", "3", "-y", "4" }, true, "");
+                CHECK_EQUAL(2, x.size());
+                CHECK_EQUAL("1", x[0]);
+                CHECK_EQUAL("3", x[1]);
+                CHECK_EQUAL(2, y.size());
+                CHECK_EQUAL("2", y[0]);
+                CHECK_EQUAL("4", y[1]);
+            }
+        }
+
+        // Word
+        namespace
+        {
+            class WordStringVectorBase : public Test
+            {
+            public:
+                WordStringVectorBase()
+                {
+                    arguments.AddOption("val", "description", val);
+                }
+                std::vector<std::string> val;
+            };
+
+            TEST(WordStringVector, 1, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val1" }, false, "Invalid argument: --val1");
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordStringVector, 2, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val=2" }, true, "");
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("2", val[0]);
+            }
+
+            TEST(WordStringVector, 3, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val", "3" }, true, "");
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("3", val[0]);
+            }
+
+            TEST(WordStringVector, 4, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val=", "4" }, true, "");
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("4", val[0]);
+            }
+
+            TEST(WordStringVector, 5, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val" }, false, "Invalid argument: --val");
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordStringVector, 6, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val=" }, false, "Invalid argument: --val=");
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordStringVector, 7, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val=1", "--val=2" }, true, "");
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("1", val[0]);
+                CHECK_EQUAL("2", val[1]);
+            }
+
+            TEST(WordStringVector, 8, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val", "3", "--val", "4" }, true, "");
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("3", val[0]);
+                CHECK_EQUAL("4", val[1]);
+            }
+
+            TEST(WordStringVector, 9, WordStringVectorBase)
+            {
+                ProcessArgs({ "--val=", "4", "--val=", "5" }, true, "");
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("4", val[0]);
+                CHECK_EQUAL("5", val[1]);
+            }
+        }
+
+        // Words
+        namespace
+        {
+            class WordsStringVectorBase : public Test
+            {
+            public:
+                WordsStringVectorBase()
+                {
+                    arguments.AddOption("name", "description", name);
+                    arguments.AddOption("val", "description", val);
+                }
+                std::vector<std::string> name;
+                std::vector<std::string> val;
+            };
+
+            TEST(WordsStringVector, 1, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name1", "--val2" }, false, "Invalid argument: --name1");
+                CHECK_EQUAL(0, name.size());
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordsStringVector, 2, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name=3", "--val=4" }, true, "");
+                CHECK_EQUAL(1, name.size());
+                CHECK_EQUAL("3", name[0]);
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("4", val[0]);
+            }
+
+            TEST(WordsStringVector, 3, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name", "5", "--val", "6" }, true, "");
+                CHECK_EQUAL(1, name.size());
+                CHECK_EQUAL("5", name[0]);
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("6", val[0]);
+            }
+
+            TEST(WordsStringVector, 4, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name=", "7", "--val=", "8" }, true, "");
+                CHECK_EQUAL(1, name.size());
+                CHECK_EQUAL("7", name[0]);
+                CHECK_EQUAL(1, val.size());
+                CHECK_EQUAL("8", val[0]);
+            }
+
+            TEST(WordsStringVector, 5, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name", "--val" }, false, "Invalid argument: --name");
+                CHECK_EQUAL(0, name.size());
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordsStringVector, 6, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name=", "--val=" }, false, "Invalid argument: --name=");
+                CHECK_EQUAL(0, name.size());
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordsStringVector, 7, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name9val10" }, false, "Invalid argument: --name9val10");
+                CHECK_EQUAL(0, name.size());
+                CHECK_EQUAL(0, val.size());
+            }
+
+            TEST(WordsStringVector, 8, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name=1", "--val=2", "--name=3", "--val=4" }, true, "");
+                CHECK_EQUAL(2, name.size());
+                CHECK_EQUAL("1", name[0]);
+                CHECK_EQUAL("3", name[1]);
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("2", val[0]);
+                CHECK_EQUAL("4", val[1]);
+            }
+
+            TEST(WordsStringVector, 9, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name", "5", "--val", "6", "--name", "7", "--val", "8" }, true, "");
+                CHECK_EQUAL(2, name.size());
+                CHECK_EQUAL("5", name[0]);
+                CHECK_EQUAL("7", name[1]);
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("6", val[0]);
+                CHECK_EQUAL("8", val[1]);
+            }
+
+            TEST(WordsStringVector, 10, WordsStringVectorBase)
+            {
+                ProcessArgs({ "--name=", "A", "--val=", "B", "--name=", "C", "--val=", "D" }, true, "");
+                CHECK_EQUAL(2, name.size());
+                CHECK_EQUAL("A", name[0]);
+                CHECK_EQUAL("C", name[1]);
+                CHECK_EQUAL(2, val.size());
+                CHECK_EQUAL("B", val[0]);
+                CHECK_EQUAL("D", val[1]);
+            }
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
