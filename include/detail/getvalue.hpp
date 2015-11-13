@@ -100,12 +100,34 @@ namespace cyoarguments
             }
         }
 
+        // nullable
+
         template<typename T>
         int GetValue(const char* arg, Argument<T>& target)
         {
             T value;
             int ret = GetValue(arg, value);
             target.set(value);
+            return ret;
+        }
+
+        // containers
+
+        template<typename T>
+        int GetValue(const char* arg, std::list<T>& target)
+        {
+            T value;
+            int ret = GetValue(arg, value);
+            target.push_back(value);
+            return ret;
+        }
+
+        template<typename T>
+        int GetValue(const char* arg, std::vector<T>& target)
+        {
+            T value;
+            int ret = GetValue(arg, value);
+            target.push_back(value);
             return ret;
         }
     }

@@ -39,7 +39,7 @@ namespace cyoarguments
             OptionBase() = default;
             virtual ~OptionBase() = default;
 
-            static void OutputImpl(char letter, const char* word, const char* description, bool valueless)
+            static void OutputHelpImpl(char letter, const char* word, const char* description, bool valueless)
             {
                 std::cout << "  ";
 
@@ -51,7 +51,7 @@ namespace cyoarguments
                 else
                     std::cout << "    "; //4 spaces
 
-                if (word != nullptr)
+                if (word != nullptr && *word != '\0')
                 {
                     std::cout << '/' << word;
                     len += ((int)std::strlen(word) + 1);
@@ -89,6 +89,8 @@ namespace cyoarguments
 
         using OptionPtr = std::unique_ptr<OptionBase>;
 
+        using OptionsList = std::list<OptionPtr>;
+
         ////////////////////////////////
 
         template<typename T>
@@ -119,9 +121,11 @@ namespace cyoarguments
             {
             }
 
-            void Output() const override
+            void OutputUsage() const override { } //nothing to do (options aren't listed individually)
+
+            void OutputHelp() const override
             {
-                OutputImpl(letter_, word_.c_str(), description_.c_str(), valueless_);
+                OutputHelpImpl(letter_, word_.c_str(), description_.c_str(), valueless_);
             }
 
             bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
@@ -140,7 +144,7 @@ namespace cyoarguments
                             if (valueless_)
                             {
                                 //bool
-                                detail::GetValue(argv[index], *target_);
+                                GetValue(argv[index], *target_);
                                 return true;
                             }
 
@@ -162,9 +166,9 @@ namespace cyoarguments
                                 }
 
                                 T value;
-                                if (detail::GetValue(argv[newIndex], value) >= 1)
+                                if (GetValue(argv[newIndex], value) >= 1)
                                 {
-                                    *target_ = value;
+                                    GetValue(argv[newIndex], *target_);
                                     index = newIndex;
                                     return true;
                                 }
@@ -193,12 +197,12 @@ namespace cyoarguments
                                 ++wordLen;
 
                             T value;
-                            int len = detail::GetValue(argStart + wordLen, value);
+                            int len = GetValue(argStart + wordLen, value);
                             if (len >= 1)
                             {
                                 if (argStart[wordLen + len] == '\0')
                                 {
-                                    *target_ = value;
+                                    GetValue(argStart + wordLen, *target_);
                                     return true;
                                 }
                             }
@@ -221,10 +225,10 @@ namespace cyoarguments
                                         return false;
                                     }
                                     T value;
-                                    int len = detail::GetValue(argv[newIndex], value);
+                                    int len = GetValue(argv[newIndex], value);
                                     if (len >= 1)
                                     {
-                                        *target_ = value;
+                                        GetValue(argv[newIndex], *target_);
                                         index = newIndex;
                                         return true;
                                     }
@@ -248,7 +252,7 @@ namespace cyoarguments
                         }
                         else
                         {
-                            detail::GetValue(argv[index], *target_);
+                            GetValue(argv[index], *target_);
                             return true;
                         }
                     }
@@ -274,17 +278,17 @@ namespace cyoarguments
                     }
 
                     T value;
-                    int len = detail::GetValue(argv[index] + ch, value);
+                    int len = GetValue(argv[index] + ch, value);
                     if (len >= 1)
                     {
-                        *target_ = value;
+                        GetValue(argv[index] + ch, *target_);
                         ch += len;
                         return true;
                     }
                     else if (index + 1 < argc)
                     {
                         // Get value from the next argument...
-                        ch = detail::GetValue(argv[++index], *target_);
+                        ch = GetValue(argv[++index], *target_);
                         return true;
                     }
                     else
@@ -295,8 +299,8 @@ namespace cyoarguments
             }
 
         private:
-            const bool valueless_ = detail::valueless<T>::value;
-            const bool requiresEquals_ = detail::requiresEquals<T>::value;
+            const bool valueless_ = valueless<T>::value;
+            const bool requiresEquals_ = requires_equals<T>::value;
             char letter_;
             const std::string word_;
             const std::string description_;

@@ -33,19 +33,25 @@ namespace cyoarguments
 {
     namespace detail
     {
-        template<typename T> struct allowRequired : std::true_type { };
-        template<> struct allowRequired<bool> : std::false_type { };
-        template<typename U> struct allowRequired<Argument<U>> : std::false_type { };
+        template<typename T> struct allow_required : std::true_type { };
+        template<> struct allow_required<bool> : std::false_type { };
+        template<typename U> struct allow_required<Argument<U>> : std::false_type { };
+        template<typename U> struct allow_required<std::list<U>> : std::false_type { };
+        template<typename U> struct allow_required<std::vector<U>> : std::false_type{};
 
         template<typename T> struct valueless : std::false_type { };
         template<> struct valueless<bool> : std::true_type { };
         template<> struct valueless<Argument<bool>> : std::true_type { };
 
-        template<typename T> struct requiresEquals : std::true_type { };
-        template<> struct requiresEquals<int> : std::false_type { };
-        template<> struct requiresEquals<Argument<int>> : std::false_type { };
-        template<> struct requiresEquals<unsigned int> : std::false_type { };
-        template<> struct requiresEquals<Argument<unsigned int>> : std::false_type { };
+        template<typename T> struct requires_equals : std::true_type { };
+        template<> struct requires_equals<int> : std::false_type { };
+        template<> struct requires_equals<Argument<int>> : std::false_type { };
+        template<> struct requires_equals<unsigned int> : std::false_type { };
+        template<> struct requires_equals<Argument<unsigned int>> : std::false_type { };
+
+        template<typename T> struct is_container : std::false_type { };
+        template<typename U> struct is_container<std::list<U>> : std::true_type { };
+        template<typename U> struct is_container<std::vector<U>> : std::true_type { };
     }
 }
 

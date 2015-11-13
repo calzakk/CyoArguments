@@ -38,7 +38,8 @@ namespace cyoarguments
         public:
             virtual ~ArgumentBase() { }
 
-            virtual void Output() const = 0;
+            virtual void OutputUsage() const = 0;
+            virtual void OutputHelp() const = 0;
             virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const = 0;
 
         protected:

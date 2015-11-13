@@ -1,5 +1,5 @@
 /*
-[CyoArguments] detail/required.hpp
+[CyoArguments] detail/list.hpp
 
 The MIT License (MIT)
 
@@ -24,8 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __CYOARGUMENTS_REQUIRED_HPP
-#define __CYOARGUMENTS_REQUIRED_HPP
+#ifndef __CYOARGUMENTS_LIST_HPP
+#define __CYOARGUMENTS_LIST_HPP
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,43 +33,37 @@ namespace cyoarguments
 {
     namespace detail
     {
-        class RequiredBase : public ArgumentBase
+        class ListBase : public ArgumentBase
         {
         public:
-            RequiredBase() = default;
-            virtual ~RequiredBase() = default;
-
-            virtual const std::string& getName() const = 0;
+            ListBase() = default;
+            virtual ~ListBase() = default;
         };
 
-        using RequiredPtr = std::unique_ptr<RequiredBase>;
-
-        using RequiredList = std::list<RequiredPtr>;
+        using ListPtr = std::unique_ptr<ListBase>;
 
         ////////////////////////////////
 
         template<typename T>
-        class Required final : public RequiredBase
+        class List final : public ListBase
         {
         public:
-            Required(std::string name, std::string description, T& target)
+            List(std::string name, std::string description, T& target)
                 : name_(std::move(name)),
                 description_(std::move(description)),
                 target_(&target)
             {
             }
 
-            const std::string& getName() const override { return name_; }
-
             void OutputUsage() const override
             {
-                std::cout << ' ' << name_;
+                std::cout << ' ' << name_ << "...";
             }
 
             void OutputHelp() const override
             {
-                std::cout << "  " << name_;
-                for (auto i = name_.size(); i < optionWidth_; ++i)
+                std::cout << "  " << name_ << "...";
+                for (auto i = name_.size() + 3; i < optionWidth_; ++i)
                     std::cout << ' ';
                 std::cout << description_;
                 std::cout << '\n';
@@ -79,23 +73,15 @@ namespace cyoarguments
             {
                 UNREFERENCED_PARAMETER(argc);
                 UNREFERENCED_PARAMETER(word);
-                T value;
-                int len = GetValue(argv[index], value);
-                if ((len >= 1) && (argv[index][ch + len] == '\0'))
-                {
-                    GetValue(argv[index], *target_);
-                    ch = 0;
-                    error = false;
-                    return true;
-                }
-                error = true;
+                detail::GetValue(argv[index], *target_);
+                ch = 0;
+                error = false;
                 return false;
             }
 
         private:
-            const bool isContainer_ = is_container<T>::value;
-            const std::string name_;
-            const std::string description_;
+            std::string name_;
+            std::string description_;
             T* target_;
         };
     }
@@ -103,4 +89,4 @@ namespace cyoarguments
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif //__CYOARGUMENTS_REQUIRED_HPP
+#endif //__CYOARGUMENTS_LIST_HPP

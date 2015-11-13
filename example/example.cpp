@@ -27,6 +27,7 @@ SOFTWARE.
 #include "cyoarguments.hpp"
 
 #include <iostream>
+#include <list>
 
 using namespace cyoarguments;
 
@@ -40,6 +41,14 @@ namespace
     void output(const char* name, const T& value)
     {
         std::cout << indent << name << " = " << value << std::endl;
+    }
+
+    template<typename T>
+    void output(const char* name, const std::list<T>& value)
+    {
+        int index = 0;
+        for (auto i : value)
+            std::cout << indent << name << "_" << ++index << " = " << i << std::endl;
     }
 
     template<typename T>
@@ -63,17 +72,16 @@ int main(int argc, char* argv[])
 
         args.SetFooter("See https://github.com/calzakk/CyoArguments");
 
+        // Options...
+
         bool all = false;
         args.AddOption('a', "all", "description for all", all);
 
-        bool ignoreErrors = false;
-        args.AddOption('i', "description for ignoreErrors", ignoreErrors);
+        std::list<int> lengths;
+        args.AddOption("length", "description for length", lengths);
 
         int jobs = 1;
         args.AddOption('j', "jobs", "description for jobs", jobs);
-
-        int threads = 1;
-        args.AddOption('t', "threads", "description for threads", threads);
 
         Argument<std::string> name;
         args.AddOption('n', "name", "description for name", name);
@@ -90,14 +98,13 @@ int main(int argc, char* argv[])
         std::string prefix;
         args.AddOption('p', "prefix", "description for prefix", prefix);
 
-        std::string suffix;
-        args.AddOption('s', "suffix", "description for suffix", suffix);
-
         bool verbose = false;
         args.AddOption("verbose", "description for verbose", verbose);
 
         Argument<bool> quiet;
         args.AddOption('q', "quiet", "description for quiet", quiet);
+
+        // Required arguments...
 
         std::string filename;
         args.AddRequired("filename", "description for filename", filename);
@@ -105,11 +112,30 @@ int main(int argc, char* argv[])
         int count = 0;
         args.AddRequired("count", "description for count", count);
 
+        // List argument...
+
+        std::list<std::string> words;
+        args.AddList("word", "description for word", words);
+
 #if 0
+        // Disallowed...
+
         bool temp1;
-        args.AddRequired("temp1", "description for temp1", temp1);
+        args.AddRequired("temp1", "description for temp1", temp1); //bad type for required (bool)
+
         Argument<bool> temp2;
-        args.AddRequired("temp2", "description for temp2", temp2);
+        args.AddRequired("temp2", "description for temp2", temp2); //bad type for required (Argument<bool>)
+
+        std::list<int> temp3;
+        args.AddRequired("temp3", "description for temp3", temp3); //bad type for required (container)
+
+        std::list<std::string> temp4;
+        args.AddRequired("temp4", "description for temp4", temp4); //bad type for required (container)
+#endif
+
+#if 0
+        std::list<std::string> temp5;
+        args.AddList("temp5", "description for temp5", temp5); //can only have one list argument (words)
 #endif
 
 #if 1
@@ -121,11 +147,11 @@ int main(int argc, char* argv[])
         //const char* testargv[] = { "exe_pathname", "/?" };
         //const char* testargv[] = { "exe_pathname", "-?" };
         //const char* testargv[] = { "exe_pathname", "--help" };
-        //const char* testargv[] = { "exe_pathname", "-ij20a", "-a", "--verbose", "-t5p=LV426", "-n=bah", "--block=five", "--suffix", "ine", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
-        //const char* testargv[] = { "exe_pathname", "/ij20a", "/a", "/verbose", "/t5p=LV426", "/n=bah", "/block=five", "/suffix", "ine", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
-        //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
-        const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
-        //const char* testargv[] = { "exe_pathname", "/IJ20A", "/A", "/VERBOSE", "/T5P=LV426", "/N=bah", "/BLOCK=five", "/SUFFIX", "ine", "/RATIO=9.8", "/ANGLE=5.6" };
+        //const char* testargv[] = { "exe_pathname", "-aj20", "--verbose", "-p=LV426", "-n=bah", "--block=five", "--ratio=9.8", "--angle=5.6", "-q", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/aj20", "/verbose", "/p=LV426", "/n=bah", "/block=five", "/ratio=9.8", "/angle=5.6", "/q", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/aJ20", "/VERBOSE", "/P=LV426", "/N=bah", "/BLOCK=five", "/RATIO=9.8", "/ANGLE=5.6", "/Q", "results.txt", "9" };
+        const char* testargv[] = { "exe_pathname", "/AJ20", "/VERBOSE", "/P=LV426", "/N=bah", "/BLOCK=five", "/RATIO=9.8", "/ANGLE=5.6", "results.txt", "9" };
+        //const char* testargv[] = { "exe_pathname", "/AJ20", "/VERBOSE", "/P=LV426", "/N=bah", "/BLOCK=five", "/RATIO=9.8", "/ANGLE=5.6" };
         //const char* testargv[] = { "exe_pathname", "results.txt" };
         //const char* testargv[] = { "exe_pathname", "results.txt", "9" };
         //const char* testargv[] = { "exe_pathname", "results.txt", "9", "extra" };
@@ -136,19 +162,18 @@ int main(int argc, char* argv[])
 
         std::cout << "RESULTS:" << std::endl;
         output("all", all);
-        output("ignoreErrors", ignoreErrors);
+        output("lengths", lengths);
         output("jobs", jobs);
-        output("threads", threads);
         output("name", name);
         output("block", block);
         output("ratio", ratio);
         output("angle", angle);
         output("prefix", prefix);
-        output("suffix", suffix);
         output("verbose", verbose);
         output("quiet", quiet);
         output("filename", filename);
         output("count", count);
+        output("word", words);
         return 0;
     }
     catch (const std::exception& ex)
