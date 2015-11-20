@@ -72,14 +72,17 @@ namespace cyoarguments
         bool blank_ = true;
         T value_;
     };
+
+    using stringlist = std::list<std::string>;
+    using stringlist_iter = stringlist::const_iterator;
 }
 
-#include "detail/getvalue.hpp"
-#include "detail/traits.hpp"
 #include "detail/base.hpp"
+#include "detail/getvalue.hpp"
+#include "detail/list.hpp"
 #include "detail/option.hpp"
 #include "detail/required.hpp"
-#include "detail/list.hpp"
+#include "detail/traits.hpp"
 
 namespace cyoarguments
 {
@@ -200,33 +203,41 @@ namespace cyoarguments
             if (options_.empty() && required_.empty())
                 throw std::logic_error("No optional or required arguments!");
 
+            stringlist args;
+            for (int index = 1; index < argc; ++index)
+                args.emplace_back(argv[index]);
+
             // Help or version?
 
-            if ((helpEnabled_ || !version_.empty()) && FindHelpOrVersion(argc, argv))
+            if ((helpEnabled_ || !version_.empty()) && FindHelpOrVersion(args))
                 return false;
 
             // Process optional and required arguments...
 
             auto nextRequired = required_.begin();
 
-            for (int index = 1; index < argc; ++index)
+            auto lastArg = args.cend();
+            for (auto currArg = args.cbegin(); currArg != lastArg; ++currArg)
             {
+                if (currArg->empty())
+                    continue;
+
                 bool ok = false;
 #ifdef _MSC_VER
-                if (argv[index][0] == '-' || argv[index][0] == '/')
+                if (currArg->at(0) == '-' || currArg->at(0) == '/')
 #else
-                if (argv[index][0] == '-')
+                if (currArg->at(0) == '-')
 #endif
-                    ok = ProcessOptions(argc, argv, index);
+                    ok = ProcessOptions(currArg, lastArg);
                 else if (nextRequired != required_.end())
-                    ok = ProcessRequired(argc, argv, index, nextRequired);
+                    ok = ProcessRequired(currArg, lastArg, nextRequired);
                 else if (list_)
-                    ok = ProcessList(argc, argv, index);
+                    ok = ProcessList(currArg, lastArg);
 
                 if (!ok)
                 {
                     error = "Invalid argument: ";
-                    error += argv[index];
+                    error += *currArg;
                     return false;
                 }
             }
@@ -242,18 +253,18 @@ namespace cyoarguments
             return true;
         }
 
-        bool FindHelpOrVersion(int argc, char* argv[]) const
+        bool FindHelpOrVersion(const stringlist& args) const
         {
-            for (int index = 1; index < argc; ++index)
+            for (auto& arg : args)
             {
                 if (helpEnabled_)
                 {
                     bool help = false;
 #ifdef _MSC_VER
-                    help = (strcompare(argv[index], "/?") == 0) || (strcompare(argv[index], "/help") == 0);
+                    help = (strcompare(arg.c_str(), "/?") == 0) || (strcompare(arg.c_str(), "/help") == 0);
 #endif
                     if (!help)
-                        help = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--help") == 0);
+                        help = (strcompare(arg.c_str(), "-?") == 0) || (strcompare(arg.c_str(), "--help") == 0);
                     if (help)
                     {
                         DisplayHelp();
@@ -265,10 +276,10 @@ namespace cyoarguments
                 {
                     bool version = false;
 #ifdef _MSC_VER
-                    version = (strcompare(argv[index], "/?") == 0) || (strcompare(argv[index], "/version") == 0);
+                    version = (strcompare(arg.c_str(), "/?") == 0) || (strcompare(arg.c_str(), "/version") == 0);
 #endif
                     if (!version)
-                        version = (strcompare(argv[index], "-?") == 0) || (strcompare(argv[index], "--version") == 0);
+                        version = (strcompare(arg.c_str(), "-?") == 0) || (strcompare(arg.c_str(), "--version") == 0);
                     if (version)
                     {
                         DisplayVersion();
@@ -327,39 +338,39 @@ namespace cyoarguments
             std::cout << version_ << std::endl;
         }
 
-        bool ProcessOptions(int argc, char* argv[], int& index) const
+        bool ProcessOptions(stringlist_iter& currArg, const stringlist_iter& lastArg) const
         {
             int ch = 0;
 
 #ifdef _MSC_VER //only allow 'slash' arguments on Windows
-            if (argv[index][ch] == '/')
+            if (currArg->at(ch) == '/')
             {
                 ++ch;
-                if (ProcessWord(argc, argv, index, ch))
+                if (ProcessWord(currArg, lastArg, ch))
                     return true;
                 else
-                    return ProcessLetters(argc, argv, index, ch);
+                    return ProcessLetters(currArg, lastArg, ch);
             }
 #endif
 
             //'dash' arguments on all OSes
-            assert(argv[index][ch] == '-');
+            assert(currArg->at(ch) == '-');
             ++ch;
-            if (argv[index][ch] == '-')
+            if (currArg->at(ch) == '-')
             {
                 ++ch;
-                return ProcessWord(argc, argv, index, ch);
+                return ProcessWord(currArg, lastArg, ch);
             }
             else
-                return ProcessLetters(argc, argv, index, ch);
+                return ProcessLetters(currArg, lastArg, ch);
         }
 
-        bool ProcessWord(int argc, char* argv[], int& index, int& ch) const
+        bool ProcessWord(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch) const
         {
             for (const auto& option : options_)
             {
                 bool error;
-                if (option->Process(argc, argv, index, ch, true, error))
+                if (option->Process(currArg, lastArg, ch, true, error))
                     return true;
                 if (error)
                     return false;
@@ -367,31 +378,31 @@ namespace cyoarguments
             return false;
         }
 
-        bool ProcessLetters(int argc, char* argv[], int& index, int& ch) const
+        bool ProcessLetters(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch) const
         {
-            int indexBak = index;
-            while ((indexBak == index) && (argv[index][ch] != '\0'))
+            stringlist_iter startArg = currArg;
+            while ((startArg == currArg) && (ch < (int)currArg->size()))
             {
                 int chBak = ch;
                 for (const auto& option : options_)
                 {
                     bool error;
-                    if (option->Process(argc, argv, index, ch, false, error))
+                    if (option->Process(currArg, lastArg, ch, false, error))
                         break;
                     if (error)
                         return false;
                 }
-                if ((indexBak == index) && (chBak == ch))
+                if ((startArg == currArg) && (chBak == ch))
                     return false;
             }
-            return (argv[index][ch] == '\0'); //true if at end of arg
+            return (ch == (int)currArg->size()); //true if at end of current arg
         }
 
-        bool ProcessRequired(int argc, char* argv[], int& index, detail::RequiredList::const_iterator& it) const
+        bool ProcessRequired(stringlist_iter& currArg, const stringlist_iter& lastArg, detail::RequiredList::const_iterator& it) const
         {
             int ch = 0;
             bool error;
-            if ((*it)->Process(argc, argv, index, ch, true, error))
+            if ((*it)->Process(currArg, lastArg, ch, true, error))
             {
                 ++it;
                 return true;
@@ -400,11 +411,11 @@ namespace cyoarguments
                 return false;
         }
 
-        bool ProcessList(int argc, char* argv[], int& index) const
+        bool ProcessList(stringlist_iter& currArg, const stringlist_iter& lastArg) const
         {
             int ch = 0;
             bool error;
-            list_->Process(argc, argv, index, ch, true, error); //TODO: CHECK RETURN CODE?
+            list_->Process(currArg, lastArg, ch, true, error); //TODO: CHECK RETURN CODE?
             return true;
         }
     };

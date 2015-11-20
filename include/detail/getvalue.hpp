@@ -34,7 +34,7 @@ namespace cyoarguments
     namespace detail
     {
         template<typename T>
-        int GetValue(const char* arg, T& target)
+        int GetValue(const std::string& arg, T& target)
         {
             UNREFERENCED_PARAMETER(arg);
             UNREFERENCED_PARAMETER(target);
@@ -46,7 +46,7 @@ namespace cyoarguments
         }
 
         template<>
-        int GetValue(const char* arg, bool& target)
+        int GetValue(const std::string& arg, bool& target)
         {
             UNREFERENCED_PARAMETER(arg);
             target = true;
@@ -54,43 +54,47 @@ namespace cyoarguments
         }
 
         template<>
-        int GetValue(const char* arg, int& target)
+        int GetValue(const std::string& arg, int& target)
         {
+            const char* startptr = arg.c_str();
             char* endptr = nullptr;
-            target = (int)std::strtol(arg, &endptr, 0);
-            return (int)(endptr - arg);
+            target = (int)std::strtol(startptr, &endptr, 0);
+            return (int)(endptr - startptr);
         }
 
         template<>
-        int GetValue(const char* arg, unsigned int& target)
+        int GetValue(const std::string& arg, unsigned int& target)
         {
+            const char* startptr = arg.c_str();
             char* endptr = nullptr;
-            target = (unsigned int)std::strtoul(arg, &endptr, 0);
-            return (int)(endptr - arg);
+            target = (unsigned int)std::strtoul(startptr, &endptr, 0);
+            return (int)(endptr - startptr);
         }
 
         template<>
-        int GetValue(const char* arg, float& target)
+        int GetValue(const std::string& arg, float& target)
         {
+            const char* startptr = arg.c_str();
             char* endptr = nullptr;
-            target = std::strtof(arg, &endptr);
-            return (int)(endptr - arg);
+            target = std::strtof(startptr, &endptr);
+            return (int)(endptr - startptr);
         }
 
         template<>
-        int GetValue(const char* arg, double& target)
+        int GetValue(const std::string& arg, double& target)
         {
+            const char* startptr = arg.c_str();
             char* endptr = nullptr;
-            target = std::strtod(arg, &endptr);
-            return (int)(endptr - arg);
+            target = std::strtod(startptr, &endptr);
+            return (int)(endptr - startptr);
         }
 
         template<>
-        int GetValue(const char* arg, std::string& target)
+        int GetValue(const std::string& arg, std::string& target)
         {
-            if (*arg == '=')
+            if (!arg.empty() && arg[0] == '=')
             {
-                target = (arg + 1);
+                target = arg.substr(1);
                 return ((int)target.size() + 1);
             }
             else
@@ -103,7 +107,7 @@ namespace cyoarguments
         // nullable
 
         template<typename T>
-        int GetValue(const char* arg, Argument<T>& target)
+        int GetValue(const std::string& arg, Argument<T>& target)
         {
             T value;
             int ret = GetValue(arg, value);
@@ -114,7 +118,7 @@ namespace cyoarguments
         // containers
 
         template<typename T>
-        int GetValue(const char* arg, std::list<T>& target)
+        int GetValue(const std::string& arg, std::list<T>& target)
         {
             T value;
             int ret = GetValue(arg, value);
@@ -123,7 +127,7 @@ namespace cyoarguments
         }
 
         template<typename T>
-        int GetValue(const char* arg, std::vector<T>& target)
+        int GetValue(const std::string& arg, std::vector<T>& target)
         {
             T value;
             int ret = GetValue(arg, value);

@@ -40,7 +40,7 @@ namespace cyoarguments
 
             virtual void OutputUsage() const = 0;
             virtual void OutputHelp() const = 0;
-            virtual bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const = 0;
+            virtual bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const = 0;
 
         protected:
             static const std::size_t optionWidth_ = 20;

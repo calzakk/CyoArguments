@@ -128,171 +128,21 @@ namespace cyoarguments
                 OutputHelpImpl(letter_, word_.c_str(), description_.c_str(), valueless_);
             }
 
-            bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
+            bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const override
             {
                 error = false;
 
-                if (word && !word_.empty())
+                if (word)
                 {
-                    char* argStart = argv[index] + ch;
-                    auto wordLen = word_.size();
-                    if (strncompare(word_.c_str(), argStart, wordLen) == 0)
-                    {
-                        if (argStart[wordLen] == '\0')
-                        {
-                            // The argument matches the word
-                            if (valueless_)
-                            {
-                                //bool
-                                GetValue(argv[index], *target_);
-                                return true;
-                            }
-
-                            if (index + 1 < argc)
-                            {
-                                // Get the value from the next argument...
-                                int newIndex = (index + 1);
-#ifdef _MSC_VER
-                                if (argv[newIndex][0] == '/')
-                                {
-                                    error = true;
-                                    return false;
-                                }
-#endif
-                                if (argv[newIndex][0] == '-')
-                                {
-                                    error = true;
-                                    return false;
-                                }
-
-                                T value;
-                                if (GetValue(argv[newIndex], value) >= 1)
-                                {
-                                    GetValue(argv[newIndex], *target_);
-                                    index = newIndex;
-                                    return true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // The argument starts with the word
-                            if (valueless_)
-                            {
-                                //bool
-                                error = true;
-                                return false;
-                            }
-
-                            if (requiresEquals_)
-                            {
-                                if (argStart[wordLen] != '=')
-                                {
-                                    error = true;
-                                    return false;
-                                }
-                                ++wordLen;
-                            }
-                            else if (argStart[wordLen] == '=')
-                                ++wordLen;
-
-                            T value;
-                            int len = GetValue(argStart + wordLen, value);
-                            if (len >= 1)
-                            {
-                                if (argStart[wordLen + len] == '\0')
-                                {
-                                    GetValue(argStart + wordLen, *target_);
-                                    return true;
-                                }
-                            }
-                            else if (len == 0)
-                            {
-                                if (index + 1 < argc)
-                                {
-                                    // Get the value from the next argument...
-                                    int newIndex = (index + 1);
-#ifdef _MSC_VER
-                                    if (argv[newIndex][0] == '/')
-                                    {
-                                        error = true;
-                                        return false;
-                                    }
-#endif
-                                    if (argv[newIndex][0] == '-')
-                                    {
-                                        error = true;
-                                        return false;
-                                    }
-                                    T value;
-                                    int len = GetValue(argv[newIndex], value);
-                                    if (len >= 1)
-                                    {
-                                        GetValue(argv[newIndex], *target_);
-                                        index = newIndex;
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                        error = true;
-                    }
+                    if (!word_.empty()
+                        && ProcessWord(currArg, lastArg, ch, error))
+                        return true;
                 }
-                else if (!word && Matches(letter_, argv[index][ch]))
+                else
                 {
-                    ++ch;
-
-                    if (valueless_)
-                    {
-                        // bool
-                        if (argv[index][ch] == '=')
-                        {
-                            error = true;
-                            return false;
-                        }
-                        else
-                        {
-                            GetValue(argv[index], *target_);
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        if (requiresEquals_)
-                        {
-                            //non-int
-                            if ((argv[index][ch] != '\0') && (argv[index][ch] != '='))
-                            {
-                                error = true;
-                                return false;
-                            }
-                            else if (argv[index][ch] == '=')
-                                ++ch;
-                        }
-                        else
-                        {
-                            //int
-                            if (argv[index][ch] == '=')
-                                ++ch;
-                        }
-                    }
-
-                    T value;
-                    int len = GetValue(argv[index] + ch, value);
-                    if (len >= 1)
-                    {
-                        GetValue(argv[index] + ch, *target_);
-                        ch += len;
+                    if (Matches(letter_, currArg->at(ch))
+                        && ProcessLetter(currArg, lastArg, ch, error))
                         return true;
-                    }
-                    else if (index + 1 < argc)
-                    {
-                        // Get value from the next argument...
-                        ch = GetValue(argv[++index], *target_);
-                        return true;
-                    }
-                    else
-                        error = true;
                 }
 
                 return false;
@@ -306,6 +156,123 @@ namespace cyoarguments
             const std::string description_;
             T* target_;
 
+            bool ProcessWord(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool& error) const
+            {
+                if (strcompare(currArg->c_str() + ch, word_.c_str()) == 0)
+                {
+                    // The argument matches the word
+                    if (valueless_) //bool
+                    {
+                        GetValue(*currArg, *target_);
+                        return true;
+                    }
+
+                    if (GetValueFromNextArg(currArg, lastArg))
+                        return true;
+
+                    error = true;
+                    return false;
+                }
+
+                auto wordLen = word_.size();
+                if (strncompare(currArg->c_str() + ch, word_.c_str(), wordLen) == 0)
+                {
+                    // The argument starts with the word
+                    if (valueless_) //bool
+                    {
+                        error = true;
+                        return false;
+                    }
+
+                    if (requiresEquals_)
+                    {
+                        if (currArg->at(ch + wordLen) != '=')
+                        {
+                            error = true;
+                            return false;
+                        }
+                        ++wordLen;
+                    }
+                    else if (currArg->at(ch + wordLen) == '=')
+                        ++wordLen;
+
+                    T value;
+                    int len = GetValue(currArg->substr(ch + wordLen), value);
+                    if (len >= 1)
+                    {
+                        if (ch + wordLen + len == (int)currArg->size())
+                        {
+                            GetValue(currArg->substr(ch + wordLen), *target_);
+                            return true;
+                        }
+                    }
+                    else if (GetValueFromNextArg(currArg, lastArg))
+                        return true;
+
+                    error = true;
+                    return false;
+                }
+
+                return false; //not an error!
+            }
+
+            bool ProcessLetter(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool& error) const
+            {
+                ++ch;
+
+                if (valueless_) //bool
+                {
+                    if ((ch < (int)currArg->size()) && (currArg->at(ch) == '='))
+                    {
+                        error = true;
+                        return false;
+                    }
+
+                    GetValue(*currArg, *target_);
+                    return true;
+                }
+
+                if (ch < (int)currArg->size())
+                {
+                    if (requiresEquals_) //non-int
+                    {
+                        if (currArg->at(ch) != '=')
+                        {
+                            error = true;
+                            return false;
+                        }
+                    }
+
+                    if (currArg->at(ch) == '=')
+                        ++ch;
+
+                    if (ch < (int)currArg->size())
+                    {
+                        T value;
+                        int len = GetValue(currArg->substr(ch), value);
+                        if (len >= 1)
+                        {
+                            GetValue(currArg->substr(ch), *target_);
+                            ch += len;
+                            return true;
+                        }
+                    }
+                }
+
+                // Get value from the next argument...
+                stringlist_iter nextArg = std::next(currArg);
+                if (nextArg != lastArg)
+                {
+                    currArg = nextArg;
+                    ch = GetValue(*currArg, *target_);
+                    return true;
+                }
+
+                // No more arguments
+                error = true;
+                return false;
+            }
+
             bool Matches(char ch1, char ch2) const
             {
 #ifdef _MSC_VER //case insensitivity only on Windows
@@ -315,6 +282,34 @@ namespace cyoarguments
                     ch2 |= (1 << 5); //make lowercase
 #endif
                 return (ch1 == ch2);
+            }
+
+            bool GetValueFromNextArg(stringlist_iter& currArg, const stringlist_iter& lastArg) const
+            {
+                stringlist_iter nextArg = std::next(currArg);
+                if (nextArg != lastArg)
+                {
+                    // Get the value from the next argument...
+                    if (!nextArg->empty())
+                    {
+#ifdef _MSC_VER
+                        if (nextArg->at(0) == '/')
+                            return false;
+#endif
+                        if (nextArg->at(0) == '-')
+                            return false;
+                    }
+
+                    T value;
+                    if (GetValue(*nextArg, value) >= 1)
+                    {
+                        GetValue(*nextArg, *target_);
+                        currArg = nextArg;
+                        return true;
+                    }
+                }
+
+                return false;
             }
         };
     }

@@ -75,15 +75,15 @@ namespace cyoarguments
                 std::cout << '\n';
             }
 
-            bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
+            bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const override
             {
-                UNREFERENCED_PARAMETER(argc);
+                UNREFERENCED_PARAMETER(lastArg);
                 UNREFERENCED_PARAMETER(word);
                 T value;
-                int len = GetValue(argv[index], value);
-                if ((len >= 1) && (argv[index][ch + len] == '\0'))
+                int len = GetValue(*currArg, value);
+                if ((len >= 1) && (ch + len == (int)currArg->size()))
                 {
-                    GetValue(argv[index], *target_);
+                    GetValue(*currArg, *target_);
                     ch = 0;
                     error = false;
                     return true;

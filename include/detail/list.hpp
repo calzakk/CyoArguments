@@ -69,11 +69,11 @@ namespace cyoarguments
                 std::cout << '\n';
             }
 
-            bool Process(int argc, char* argv[], int& index, int& ch, bool word, bool& error) const override
+            bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const override
             {
-                UNREFERENCED_PARAMETER(argc);
+                UNREFERENCED_PARAMETER(lastArg);
                 UNREFERENCED_PARAMETER(word);
-                detail::GetValue(argv[index], *target_);
+                detail::GetValue(*currArg, *target_);
                 ch = 0;
                 error = false;
                 return false;
