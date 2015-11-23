@@ -54,7 +54,10 @@ namespace
     template<typename T>
     void output(const char* name, const Argument<T>& value)
     {
-        std::cout << indent << name << " = " << (value() ? value.get() : "(blank)") << std::endl;
+        if (value())
+            std::cout << indent << name << " = " << value.get() << std::endl;
+        else
+            std::cout << indent << name << " = (blank)" << std::endl;
     }
 }
 

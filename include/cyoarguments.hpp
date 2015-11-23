@@ -77,12 +77,13 @@ namespace cyoarguments
     using stringlist_iter = stringlist::const_iterator;
 }
 
-#include "detail/base.hpp"
+#include "detail/traits.hpp"
 #include "detail/getvalue.hpp"
-#include "detail/list.hpp"
+
+#include "detail/base.hpp"
 #include "detail/option.hpp"
 #include "detail/required.hpp"
-#include "detail/traits.hpp"
+#include "detail/list.hpp"
 
 namespace cyoarguments
 {
