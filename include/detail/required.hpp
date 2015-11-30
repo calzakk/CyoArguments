@@ -93,7 +93,6 @@ namespace cyoarguments
             }
 
         private:
-            const bool isContainer_ = is_container<T>::value;
             const std::string name_;
             const std::string description_;
             T* target_;

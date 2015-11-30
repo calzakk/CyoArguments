@@ -39,7 +39,7 @@ namespace cyoarguments
             OptionBase() = default;
             virtual ~OptionBase() = default;
 
-            static void OutputHelpImpl(char letter, const char* word, const char* description, bool valueless)
+            static void OutputHelpImpl(char letter, const char* word, bool isNumeric, const char* description, bool isValueless)
             {
                 std::cout << "  ";
 
@@ -55,10 +55,18 @@ namespace cyoarguments
                 {
                     std::cout << '/' << word;
                     len += ((int)std::strlen(word) + 1);
-                    if (!valueless)
+                    if (!isValueless)
                     {
-                        std::cout << "=X";
-                        len += 2;
+                        if (isNumeric)
+                        {
+                            std::cout << "=NUM";
+                            len += 4;
+                        }
+                        else
+                        {
+                            std::cout << "=VALUE";
+                            len += 6;
+                        }
                     }
                 }
 #else
@@ -71,7 +79,7 @@ namespace cyoarguments
                 {
                     std::cout << "--" << word;
                     len += ((int)std::strlen(word) + 2);
-                    if (!valueless)
+                    if (!isValueless)
                     {
                         std::cout << "=X";
                         len += 2;
@@ -125,7 +133,7 @@ namespace cyoarguments
 
             void OutputHelp() const override
             {
-                OutputHelpImpl(letter_, word_.c_str(), description_.c_str(), valueless_);
+                OutputHelpImpl(letter_, word_.c_str(), isNumeric_, description_.c_str(), isValueless_);
             }
 
             bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const override
@@ -149,8 +157,9 @@ namespace cyoarguments
             }
 
         private:
-            const bool valueless_ = valueless<T>::value;
-            const bool requiresEquals_ = requires_equals<T>::value;
+            const bool isValueless_ = is_valueless<T>::value;
+            const bool isNumeric_ = is_numeric<T>::value;
+            const bool requiresAssignment_ = requires_assignment<T>::value;
             char letter_;
             const std::string word_;
             const std::string description_;
@@ -161,7 +170,7 @@ namespace cyoarguments
                 if (strcompare(currArg->c_str() + ch, word_.c_str()) == 0)
                 {
                     // The argument matches the word
-                    if (valueless_) //bool
+                    if (isValueless_) //bool
                     {
                         GetValue(*currArg, *target_);
                         return true;
@@ -178,13 +187,13 @@ namespace cyoarguments
                 if (strncompare(currArg->c_str() + ch, word_.c_str(), wordLen) == 0)
                 {
                     // The argument starts with the word
-                    if (valueless_) //bool
+                    if (isValueless_) //bool
                     {
                         error = true;
                         return false;
                     }
 
-                    if (requiresEquals_)
+                    if (requiresAssignment_)
                     {
                         if (currArg->at(ch + wordLen) != '=')
                         {
@@ -220,7 +229,7 @@ namespace cyoarguments
             {
                 ++ch;
 
-                if (valueless_) //bool
+                if (isValueless_) //bool
                 {
                     if ((ch < (int)currArg->size()) && (currArg->at(ch) == '='))
                     {
@@ -234,7 +243,7 @@ namespace cyoarguments
 
                 if (ch < (int)currArg->size())
                 {
-                    if (requiresEquals_) //non-int
+                    if (requiresAssignment_) //non-int
                     {
                         if (currArg->at(ch) != '=')
                         {

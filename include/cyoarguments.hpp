@@ -130,7 +130,7 @@ namespace cyoarguments
         template<typename T>
         void AddRequired(std::string name, std::string description, T& target)
         {
-            static_assert(detail::allow_required<T>::value, "Disallowed type of required argument");
+            static_assert(detail::allow_required_argument<T>::value, "Disallowed type of required argument");
             VerifyRequired(name);
             required_.push_back(std::make_unique<detail::Required<T>>(name, description, target));
         }
@@ -138,7 +138,7 @@ namespace cyoarguments
         template<typename T>
         void AddList(std::string name, std::string description, T& target)
         {
-            static_assert(detail::is_container<T>::value, "Disallowed type of list argument");
+            static_assert(detail::allow_list_argument<T>::value, "Disallowed type of list argument");
             VerifyList(name);
             list_ = std::make_unique<detail::List<T>>(name, description, target);
         }
@@ -323,9 +323,9 @@ namespace cyoarguments
                 for (const auto& option : options_)
                     option->OutputHelp();
                 if (helpEnabled_)
-                    detail::OptionBase::OutputHelpImpl('\0', "help", "display this help and exit", true);
+                    detail::OptionBase::OutputHelpImpl('\0', "help", false, "display this help and exit", true);
                 if (!version_.empty())
-                    detail::OptionBase::OutputHelpImpl('\0', "version", "output version information and exit", true);
+                    detail::OptionBase::OutputHelpImpl('\0', "version", false, "output version information and exit", true);
             }
 
             if (!footer_.empty())

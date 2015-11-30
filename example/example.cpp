@@ -40,7 +40,7 @@ namespace
     template<typename T>
     void output(const char* name, const T& value)
     {
-        std::cout << indent << name << " = " << value << std::endl;
+        std::cout << indent << indent << name << " = " << value << std::endl;
     }
 
     template<typename T>
@@ -48,16 +48,16 @@ namespace
     {
         int index = 0;
         for (auto i : value)
-            std::cout << indent << name << "_" << ++index << " = " << i << std::endl;
+            std::cout << indent << indent << name << "_" << ++index << " = " << i << std::endl;
     }
 
     template<typename T>
     void output(const char* name, const Argument<T>& value)
     {
         if (value())
-            std::cout << indent << name << " = " << value.get() << std::endl;
+            std::cout << indent << indent << name << " = " << value.get() << std::endl;
         else
-            std::cout << indent << name << " = (blank)" << std::endl;
+            std::cout << indent << indent << name << " = (not specified)" << std::endl;
     }
 }
 
@@ -164,6 +164,7 @@ int main(int argc, char* argv[])
 #endif
 
         std::cout << "RESULTS:" << std::endl;
+        std::cout << indent << "options:" << std::endl;
         output("all", all);
         output("lengths", lengths);
         output("jobs", jobs);
@@ -174,8 +175,10 @@ int main(int argc, char* argv[])
         output("prefix", prefix);
         output("verbose", verbose);
         output("quiet", quiet);
+        std::cout << indent << "required:" << std::endl;
         output("filename", filename);
         output("count", count);
+        std::cout << indent << "list:" << std::endl;
         output("word", words);
         return 0;
     }
