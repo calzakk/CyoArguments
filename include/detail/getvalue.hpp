@@ -110,9 +110,9 @@ namespace cyoarguments
         int GetValue(const std::string& arg, Argument<T>& target)
         {
             T value;
-            int ret = GetValue(arg, value);
+            int len = GetValue(arg, value);
             target.set(value);
-            return ret;
+            return len;
         }
 
         // containers
@@ -121,18 +121,18 @@ namespace cyoarguments
         int GetValue(const std::string& arg, std::list<T>& target)
         {
             T value;
-            int ret = GetValue(arg, value);
+            int len = GetValue(arg, value);
             target.push_back(value);
-            return ret;
+            return len;
         }
 
         template<typename T>
         int GetValue(const std::string& arg, std::vector<T>& target)
         {
             T value;
-            int ret = GetValue(arg, value);
+            int len = GetValue(arg, value);
             target.push_back(value);
-            return ret;
+            return len;
         }
     }
 }

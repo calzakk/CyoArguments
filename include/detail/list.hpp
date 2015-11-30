@@ -73,10 +73,17 @@ namespace cyoarguments
             {
                 UNREFERENCED_PARAMETER(lastArg);
                 UNREFERENCED_PARAMETER(word);
-                detail::GetValue(*currArg, *target_);
+                T value;
+                int len = GetValue(*currArg, value);
+                if (len != (int)currArg->size())
+                {
+                    error = true;
+                    return false;
+                }
+                GetValue(*currArg, *target_);
                 ch = 0;
                 error = false;
-                return false;
+                return true;
             }
 
         private:

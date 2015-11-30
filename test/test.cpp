@@ -680,6 +680,59 @@ namespace
             }
         }
 
+        // List
+        namespace
+        {
+            class ListIntBase : public Test
+            {
+            public:
+                ListIntBase()
+                {
+                    arguments.AddList("numbers", "description", numbers);
+                }
+                std::vector<int> numbers;
+            };
+
+            TEST(ListInt, 1, ListIntBase)
+            {
+                ProcessArgs({}, true, "");
+                CHECK(numbers.empty());
+            }
+
+            TEST(ListInt, 2, ListIntBase)
+            {
+                ProcessArgs({ "123" }, true, "");
+                CHECK_EQUAL(1, numbers.size());
+                CHECK_EQUAL(123, numbers[0]);
+            }
+
+            TEST(ListInt, 3, ListIntBase)
+            {
+                ProcessArgs({ "123", "456" }, true, "");
+                CHECK_EQUAL(2, numbers.size());
+                CHECK_EQUAL(123, numbers[0]);
+                CHECK_EQUAL(456, numbers[1]);
+            }
+
+            TEST(ListInt, 4, ListIntBase)
+            {
+                ProcessArgs({ "a" }, false, "Invalid argument: a");
+                CHECK(numbers.empty());
+            }
+
+            TEST(ListInt, 5, ListIntBase)
+            {
+                ProcessArgs({ "1a" }, false, "Invalid argument: 1a");
+                CHECK(numbers.empty());
+            }
+
+            TEST(ListInt, 6, ListIntBase)
+            {
+                ProcessArgs({ "a1" }, false, "Invalid argument: a1");
+                CHECK(numbers.empty());
+            }
+        }
+
         // Letter
         namespace
         {
@@ -1167,6 +1220,41 @@ namespace
                 ProcessArgs({ "alpha", "beta", "gamma" }, false, "Invalid argument: gamma");
                 CHECK_EQUAL("alpha", first);
                 CHECK_EQUAL("beta", second);
+            }
+        }
+
+        // List
+        namespace
+        {
+            class ListStringBase : public Test
+            {
+            public:
+                ListStringBase()
+                {
+                    arguments.AddList("words", "description", words);
+                }
+                std::vector<std::string> words;
+            };
+
+            TEST(ListString, 1, ListStringBase)
+            {
+                ProcessArgs({}, true, "");
+                CHECK(words.empty());
+            }
+
+            TEST(ListString, 2, ListStringBase)
+            {
+                ProcessArgs({ "alpha" }, true, "");
+                CHECK_EQUAL(1, words.size());
+                CHECK_EQUAL("alpha", words[0]);
+            }
+
+            TEST(ListString, 3, ListStringBase)
+            {
+                ProcessArgs({ "alpha", "beta" }, true, "");
+                CHECK_EQUAL(2, words.size());
+                CHECK_EQUAL("alpha", words[0]);
+                CHECK_EQUAL("beta", words[1]);
             }
         }
 

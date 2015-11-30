@@ -201,8 +201,8 @@ namespace cyoarguments
         {
             error.clear();
 
-            if (options_.empty() && required_.empty())
-                throw std::logic_error("No optional or required arguments!");
+            if (options_.empty() && required_.empty() && !list_)
+                throw std::logic_error("No optional, required, or list arguments!");
 
             stringlist args;
             for (int index = 1; index < argc; ++index)
@@ -416,8 +416,7 @@ namespace cyoarguments
         {
             int ch = 0;
             bool error;
-            list_->Process(currArg, lastArg, ch, true, error); //TODO: CHECK RETURN CODE?
-            return true;
+            return list_->Process(currArg, lastArg, ch, true, error);
         }
     };
 }
