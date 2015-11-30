@@ -46,15 +46,22 @@ namespace cyoarguments
                 int len = 4;
 
 #ifdef _MSC_VER
+                const char letterPrefix = '/';
+                const char* wordPrefix = "/";
+#else
+                const char letterPrefix = '-';
+                const char* wordPrefix = "--";
+#endif
+
                 if (letter != '\0')
-                    std::cout << '/' << letter << (word != nullptr ? ", " : "  ");
+                    std::cout << letterPrefix << letter << (word != nullptr ? ", " : "  ");
                 else
                     std::cout << "    "; //4 spaces
 
                 if (word != nullptr && *word != '\0')
                 {
-                    std::cout << '/' << word;
-                    len += ((int)std::strlen(word) + 1);
+                    std::cout << wordPrefix << word;
+                    len += (int)(std::strlen(wordPrefix) + std::strlen(word));
                     if (!isValueless)
                     {
                         if (isNumeric)
@@ -69,23 +76,6 @@ namespace cyoarguments
                         }
                     }
                 }
-#else
-                if (letter != '\0')
-                    std::cout << '-' << letter << (word != nullptr ? ", " : "  ");
-                else
-                    std::cout << "    "; //4 spaces
-
-                if (word != nullptr)
-                {
-                    std::cout << "--" << word;
-                    len += ((int)std::strlen(word) + 2);
-                    if (!isValueless)
-                    {
-                        std::cout << "=X";
-                        len += 2;
-                    }
-                }
-#endif
 
                 for (int i = len; i < optionWidth_; ++i)
                     std::cout << ' ';
