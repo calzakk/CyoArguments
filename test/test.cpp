@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Graham Bull
+Copyright (c) 2015-2016 Graham Bull
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

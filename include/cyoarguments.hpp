@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Graham Bull
+Copyright (c) 2015-2016 Graham Bull
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -105,6 +105,12 @@ namespace cyoarguments
 
         void SetFooter(std::string footer) { footer_ = std::move(footer); }
 
+        void AddGroup(std::string group)
+        {
+            options_.push_back(std::make_unique<detail::Group>(group));
+            ++numGroups_;
+        }
+
         template<typename T>
         void AddOption(char letter, std::string word, std::string description, T& target)
         {
@@ -168,6 +174,7 @@ namespace cyoarguments
         detail::RequiredList required_;
         detail::ListPtr list_;
         bool allowEmpty_ = false;
+        int numGroups_ = 0;
 
         void VerifyLetter(char letter)
         {
@@ -322,6 +329,8 @@ namespace cyoarguments
                 std::cout << "\nOptions:\n";
                 for (const auto& option : options_)
                     option->OutputHelp();
+                if (numGroups_ >= 1)
+                    std::cout << std::endl;
                 if (helpEnabled_)
                     detail::OptionBase::OutputHelpImpl('\0', "help", false, "display this help and exit", true);
                 if (!version_.empty())

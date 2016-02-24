@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Graham Bull
+Copyright (c) 2015-2016 Graham Bull
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -77,6 +77,8 @@ int main(int argc, char* argv[])
 
         // Options...
 
+        args.AddGroup("First group:");
+
         bool all = false;
         args.AddOption('a', "all", "description for all", all);
 
@@ -91,6 +93,8 @@ int main(int argc, char* argv[])
 
         std::string block;
         args.AddOption('b', "block", "description for block", block);
+
+        args.AddGroup("Second group:");
 
         double ratio = 0;
         args.AddOption("ratio", "description for ratio", ratio);

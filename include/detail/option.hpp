@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Graham Bull
+Copyright (c) 2015-2016 Graham Bull
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,8 @@ namespace cyoarguments
 {
     namespace detail
     {
+        const char* const indent = "  ";
+
         class OptionBase : public ArgumentBase
         {
         public:
@@ -41,16 +43,16 @@ namespace cyoarguments
 
             static void OutputHelpImpl(char letter, const char* word, bool isNumeric, const char* description, bool isValueless)
             {
-                std::cout << "  ";
+                std::cout << indent;
 
                 int len = 4;
 
 #ifdef _MSC_VER
                 const char letterPrefix = '/';
-                const char* wordPrefix = "/";
+                const char* const wordPrefix = "/";
 #else
                 const char letterPrefix = '-';
-                const char* wordPrefix = "--";
+                const char* const wordPrefix = "--";
 #endif
 
                 if (letter != '\0')
@@ -88,6 +90,33 @@ namespace cyoarguments
         using OptionPtr = std::unique_ptr<OptionBase>;
 
         using OptionsList = std::list<OptionPtr>;
+
+        ////////////////////////////////
+
+        class Group final : public OptionBase
+        {
+        public:
+            Group(std::string group)
+                : group_(std::move(group))
+            {
+            }
+
+            void OutputUsage() const override { } //nothing to do (groups are only listed in the help)
+
+            void OutputHelp() const override
+            {
+                std::cout << '\n' << indent << group_ << std::endl;
+            }
+
+            bool Process(stringlist_iter& currArg, const stringlist_iter& lastArg, int& ch, bool word, bool& error) const override
+            {
+                currArg; lastArg; ch; word; error;
+                return false;
+            }
+
+        private:
+            std::string group_;
+        };
 
         ////////////////////////////////
 
