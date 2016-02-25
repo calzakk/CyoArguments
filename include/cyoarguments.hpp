@@ -332,7 +332,7 @@ namespace cyoarguments
                 if (numGroups_ >= 1)
                     std::cout << std::endl;
                 if (helpEnabled_)
-                    detail::OptionBase::OutputHelpImpl('\0', "help", false, "display this help and exit", true);
+                    detail::OptionBase::OutputHelpImpl('?', "help", false, "display this help and exit", true);
                 if (!version_.empty())
                     detail::OptionBase::OutputHelpImpl('\0', "version", false, "output version information and exit", true);
             }
