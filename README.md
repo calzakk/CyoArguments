@@ -6,7 +6,7 @@ CyoArguments is a C++ library for processing command-line arguments.
 
 From the outset the intention was an easy-to-use library, developed using modern C++ features (C++11 and C++14).
 
-# Features
+## Features
 
 * Easy to use;
 * Allows optional and/or required arguments;
